@@ -1,0 +1,64 @@
+# Task Name and Description
+name: Compare and Merge Dictionaries Task
+
+description: >
+  Compare and merge the cleaned dictionaries into a final unified dictionary by
+  condensing the text entries. Remove unnecessary content, eliminate duplications,
+  and preserve all relevant contractual information while reducing token usage for
+  subsequent processing steps. Create a single comprehensive dictionary that contains
+  the most valuable information from both sources in the most concise form possible.
+
+  # Instructions:
+  1. **Load the two cleaned dictionaries**: 
+     - The first and second dictionaries must be loaded from the input sources. These dictionaries have already been cleaned in a prior step, ensuring that only relevant content remains.
+     - Each dictionary contains key-value pairs where keys are integers and values are strings (contractual information).
+  
+  2. **Compare and analyze text values for each key**:
+     - For each key in both dictionaries, extract the associated text values (i.e., the content).
+     - Apply **semantic similarity analysis** to compare the content for each key. This analysis should focus on identifying overlapping or similar meaning between text from both dictionaries. Use natural language processing (NLP) techniques to assess this similarity and ensure that the comparison accounts for the intent and meaning of the text, not just the exact wording.
+  
+  3. **Merge the most relevant information for each key**:
+     - After comparing the text, determine the **most relevant** and **informative** content for each key. This means selecting the text that provides the most value or detail, preserving all essential contractual information.
+     - For any duplicated or redundant information, eliminate it by keeping the version that offers the most clarity and conciseness, reducing token usage for subsequent processing.
+  
+  4. **Create a consolidated dictionary**:
+     - Combine the selected text entries from both dictionaries into a **single merged dictionary**.
+     - The final dictionary should contain the most concise, informative, and relevant contractual information from both sources. It should have the structure: `{key: text}`, where the keys are integers and the values are the text.
+     - Ensure that the dictionary is organized by key and that the text is clear, precise, and contains no unnecessary repetition.
+  
+  5. **Final Validation**:
+     - Ensure that the final dictionary does not contain any duplicate keys or conflicting information. 
+     - Perform a final check to verify that all keys have been appropriately merged and that each key’s text provides the most valuable and concise information from both dictionaries.
+
+  # Key Requirements:
+  - **Input dictionaries must be cleaned**: The dictionaries must have already undergone a cleaning process, where irrelevant or unnecessary data has been removed. This ensures that only meaningful content is passed for comparison and merging.
+  - **Semantic similarity comparison**: For each key, the content from both dictionaries should be compared for semantic similarity. This means that similar concepts or ideas should be identified, even if expressed with different wording. NLP techniques like cosine similarity or embedding-based models can be applied.
+  - **Merging process**: After comparing the content, merge the dictionaries by selecting the most relevant and informative text for each key. Redundancies should be eliminated, and the text should be condensed while maintaining the most important contractual information.
+  - **Consolidated Output**: The final output should be a single dictionary, containing the most relevant information from both input dictionaries, organized by key and with concise text values. This merged dictionary should be ready for further processing.
+
+# The agent responsible for executing the task
+agent: Contract Comparison Agent
+
+# Expected output structure and goal of this task
+expected_output: >
+  A single consolidated dictionary with structure {1:text, 2:text, ...} containing
+  the most informative and relevant contractual information from both input dictionaries,
+  with redundancies removed and text condensed to minimize token usage.
+
+# Context: Input sources and what each source represents
+context:
+  input_sources:
+    - name: "cleaned_first_dictionary"
+      description: "Cleaned first dictionary from the previous task"
+      # Key Requirement: This dictionary should be the cleaned version of the first source, containing only relevant content
+    - name: "cleaned_second_dictionary"
+      description: "Cleaned second dictionary from the previous task"
+      # Key Requirement: This dictionary should be the cleaned version of the second source, containing only relevant content
+
+# Dependencies: This task relies on the completion of another task to clean up the dictionaries
+dependencies:
+  - Clean Dictionary Task
+  # Key Requirement: This task depends on the successful completion of the "Clean Dictionary Task" to ensure the dictionaries are clean and ready for comparison
+
+# Asynchronous flag: The task will be executed synchronously in this case
+async: false
