@@ -1,0 +1,188 @@
+task:
+  name: FilterContractSections
+  description: >
+    Filter and retain contract text that relates to specific predefined sections
+    while discarding irrelevant content.
+  
+  input:
+    ocr_text:
+      type: string
+      description: >
+        The full text extracted from a contract document, potentially containing
+        both relevant and irrelevant information.
+  
+  output:
+    type: string
+    description: >
+      Filtered contract text containing only information related to defined 
+      contract sections.
+
+  relevant_sections:
+    - name: contract_metadata
+      keywords:
+        - "contract number"
+        - "agreement date"
+        - "effective date"
+        - "commencement date"
+        - "term"
+        - "parties"
+        - "agreement id"
+        - "contract id"
+        - "expiration date"
+        - "renewal"
+    
+    - name: financials
+      keywords:
+        - "payment"
+        - "fee"
+        - "pricing"
+        - "cost"
+        - "invoice"
+        - "compensation"
+        - "budget"
+        - "rate"
+        - "charge"
+        - "amount"
+        - "expense"
+        - "dollar"
+        - "price"
+        - "financial"
+    
+    - name: services
+      keywords:
+        - "service"
+        - "deliverable"
+        - "work"
+        - "scope"
+        - "project"
+        - "delivery"
+        - "performance"
+        - "responsibilities"
+        - "statement of work"
+        - "SOW"
+        - "schedule"
+    
+    - name: roles
+      keywords:
+        - "role"
+        - "responsibility"
+        - "position"
+        - "duty"
+        - "obligation"
+        - "function"
+        - "personnel"
+        - "staff"
+        - "resource"
+        - "representative"
+        - "manager"
+    
+    - name: legal_compliance
+      keywords:
+        - "compliance"
+        - "regulatory"
+        - "law"
+        - "regulation"
+        - "statute"
+        - "requirement"
+        - "legal"
+        - "governance"
+        - "policy"
+        - "guideline"
+    
+    - name: termination
+      keywords:
+        - "termination"
+        - "cancellation"
+        - "ending"
+        - "cease"
+        - "discontinue"
+        - "break"
+        - "exit"
+        - "withdraw"
+        - "dissolution"
+        - "nullify"
+    
+    - name: confidentiality
+      keywords:
+        - "confidential"
+        - "proprietary"
+        - "secret"
+        - "private"
+        - "non-disclosure"
+        - "NDA"
+        - "data protection"
+        - "sensitive information"
+  
+  instructions: >
+    1. Analyze the provided OCR text from a contract document
+    2. Identify sections that match or relate to any of the predefined relevant sections
+    3. Retain text paragraphs and content that contain or relate to the keywords for these sections
+    4. Organize the retained text by section category when possible
+    5. Discard any content that doesn't relate to the predefined relevant sections
+    6. Preserve the original wording and formatting of relevant sections
+    7. Return the filtered text as a single formatted string
+    8. Prioritize quality over quantity - only keep genuinely relevant content
+
+
+=======================
+
+
+filter_contract_sections_task:
+  name: "Filter Contract Content"
+  description: |
+    Analyze the input text and retain only sections relevant to standard contract components,
+    including: contract metadata, financial terms, services description, roles/responsibilities,
+    timelines, termination clauses, and legal provisions.
+  expected_output: |
+    A cleaned text containing only contract-relevant information, organized by:
+    - Metadata (parties, dates, contract ID)
+    - Financials (payments, fees, penalties)
+    - Services (scope, deliverables)
+    - Roles (responsibilities)
+    - Legal (governing law, liabilities)
+  agent: TextConsolidationAgent
+  config:
+    allowed_sections:
+      - "metadata"
+      - "financial"
+      - "services"
+      - "roles"
+      - "legal"
+      - "termination"
+      - "confidentiality"
+    strict_mode: true  # Only keep clearly identifiable contract sections
+    merge_duplicates: true  # Combine similar sections from multiple occurrences
+
+=========================
+
+task:
+  name: "Filter Contract-Related Text"
+  description: >
+    Analyze the provided text and its segments to retain only the portions that 
+    are relevant to defined contract sections: contract metadata, financials,
+    services, roles, and responsibilities.
+
+  inputs:
+    text: |
+      [INSERT FULL CONTRACT TEXT HERE]
+    text_chunks:
+      - chunk_1: "Text potentially about services"
+      - chunk_2: "Another text possibly about financials"
+      - chunk_3: "Irrelevant content about unrelated topics"
+      # Add more chunks as needed
+
+    contract_sections:
+      - "contract metadata"
+      - "financials"
+      - "services"
+      - "roles and responsibilities"
+      - "termination clauses"
+      - "confidentiality"
+      - "governing law"
+
+  outputs:
+    relevant_chunks:
+      description: >
+        Only include text chunks that are determined to be related to one or more of the specified contract sections.
+
+=============
