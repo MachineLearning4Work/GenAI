@@ -1,0 +1,44 @@
+import os
+import glob
+
+def merge_txt_files(input_path="output/clean_input"):
+    """
+    Merges all .txt files in each subfolder of input_path into a single file named
+    final_text_{subfolder}.txt in the same subfolder.
+    
+    Args:
+        input_path (str): Path to the root folder containing subfolders with .txt files.
+    """
+    # Check if input path exists
+    if not os.path.exists(input_path):
+        print(f"Error: Input path {input_path} does not exist")
+        return
+    
+    # Iterate through all subfolders in input_path
+    for subfolder in os.listdir(input_path):
+        subfolder_path = os.path.join(input_path, subfolder)
+        
+        # Check if it's a directory
+        if os.path.isdir(subfolder_path):
+            # Get all .txt files in the subfolder
+            txt_files = glob.glob(os.path.join(subfolder_path, "*.txt"))
+            
+            if txt_files:
+                # Output file name
+                output_file = os.path.join(subfolder_path, f"final_text_{subfolder}.txt")
+                
+                try:
+                    # Merge all txt files into one
+                    with open(output_file, 'w', encoding='utf-8') as outfile:
+                        for txt_file in txt_files:
+                            with open(txt_file, 'r', encoding='utf-8') as infile:
+                                outfile.write(infile.read())
+                                outfile.write('\n')  # Add newline between files
+                    print(f"Successfully merged {len(txt_files)} files into {output_file}")
+                except Exception as e:
+                    print(f"Error merging files in {subfolder}: {str(e)}")
+            else:
+                print(f"No .txt files found in {subfolder}")
+
+if __name__ == "__main__":
+    merge_txt_files()
