@@ -1,0 +1,53 @@
+from crewai import Agent, Task, Crew
+from crewai.tools import tool
+import time
+
+# Step 1: Define the tool to add two numbers
+@tool
+def add_numbers(a: int, b: int) -> int:
+    print(f"Adding {a} + {b}...")
+    time.sleep(1)  # Simulate computation delay
+    return a + b
+
+# Step 2: Define the cache function that only caches if the result is odd
+def cache_func(args, result):
+    # Cache only if the result is odd
+    return result % 2 != 0  # True if the result is odd
+
+# Step 3: Apply the cache function to the tool
+add_numbers.cache_function = cache_func
+
+# Step 4: Create an agent using the tool
+agent = Agent(
+    role="Calculator",
+    goal="Add two numbers",
+    backstory="Can compute sums and cache results when odd.",
+    tools=[add_numbers],
+    verbose=True
+)
+
+# Step 5: Define the task using the agent (we'll use user input here)
+def get_user_input_and_run_task():
+    # Get two numbers from user input
+    num1 = int(input("Enter the first number: "))
+    num2 = int(input("Enter the second number: "))
+    
+    # Step 6: Create the task dynamically using the user input
+    task = Task(
+        description=f"Add {num1} and {num2} using the add_numbers tool.",
+        agent=agent,
+        inputs={"a": num1, "b": num2}
+    )
+
+    # Step 7: Create and run the Crew (agent and task)
+    crew = Crew(
+        agents=[agent],
+        tasks=[task],
+        verbose=True
+    )
+
+    # Start the task
+    crew.kickoff()
+
+# Run the function to get user input and execute
+get_user_input_and_run_task()
