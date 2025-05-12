@@ -1,0 +1,67 @@
+from crewai import Agent, Task, Crew
+from crewai.tools import tool
+from crewai.tools.cache_tools import CachePolicy
+import time
+
+# Step 1: Define the tool to add two numbers
+@tool
+def add_numbers(a: int, b: int) -> int:
+    print(f"Adding {a} + {b}...")
+    time.sleep(1)  # Simulate computation delay
+    return a + b
+
+# Define a function to simulate calling an LLM
+@tool
+def process_input_with_llm(user_input: str) -> str:
+    # Here we simulate calling an LLM to interpret the user input.
+    # In real-world use, you would replace this with actual LLM API call logic.
+    print(f"Processing input with LLM: {user_input}")
+    return user_input.lower()  # Simulate LLM processing (simple example)
+
+# Step 2: Apply the cache function to the tool (only if odd)
+def cache_func(args, result):
+    return result % 2 != 0  # Cache only if the result is odd
+
+add_numbers.cache_function = cache_func
+
+# Step 3: Create an agent that can process natural language and add numbers
+agent = Agent(
+    role="Calculator with LLM",
+    goal="Add numbers after processing natural language input",
+    backstory="Uses an LLM to interpret user commands and tools to calculate.",
+    tools=[add_numbers, process_input_with_llm],
+    verbose=True
+)
+
+# Step 4: Define the task using the agent
+def get_user_input_and_run_task():
+    # Get user input and process it via LLM
+    user_input = input("Enter a command (e.g., 'add 5 and 7'): ")
+    
+    # Simulate calling LLM to process the input
+    processed_input = process_input_with_llm(user_input)
+    
+    # Extract numbers from processed input (for simplicity, we assume they're there)
+    # This would be more complex with real LLM processing.
+    nums = [int(s) for s in processed_input.split() if s.isdigit()]
+    
+    if len(nums) == 2:
+        # Run the addition task if valid numbers are extracted
+        task = Task(
+            description=f"Add {nums[0]} and {nums[1]} using the add_numbers tool.",
+            agent=agent,
+            inputs={"a": nums[0], "b": nums[1]}
+        )
+        
+        # Create and run the Crew
+        crew = Crew(
+            agents=[agent],
+            tasks=[task],
+            verbose=True
+        )
+        crew.kickoff()
+    else:
+        print("Invalid input. Please provide two numbers.")
+
+# Run the function to get user input and execute
+get_user_input_and_run_task()
