@@ -1,91 +1,86 @@
 """
-CrewAI Example: Add Two Numbers with Conditional Caching
+CrewAI Example: Structured Output with output_pydantic
 
-This script demonstrates how to use CrewAI to create an agent that adds two
-numbers entered by the user. The result is cached only if the sum is odd.
-
-Features:
-- Tool definition using @tool
-- Custom caching logic using a cache function
-- Dynamic task creation from user input
-- Execution through a Crew instance
+This script demonstrates how to:
+- Add two numbers with a CrewAI agent
+- Use Pydantic to validate the output schema
+- Cache only odd results
 """
 
 from crewai import Agent, Task, Crew
 from crewai.tools import tool
+from pydantic import BaseModel, Field
 import time
 
-# Step 1: Define the tool to add two numbers
+# Define the output model using Pydantic
+class NumberValidation(BaseModel):
+    result: int = Field(..., description="The result of the addition")
+
+# Step 1: Define a tool that adds two numbers and returns a validated output
 @tool
-def add_numbers(a: int, b: int) -> int:
+def add_numbers(a: int, b: int) -> dict:
     """
-    Adds two integers and simulates a delay to mimic a heavy computation.
+    Adds two integers and returns the result in a structured dict.
 
     Args:
         a (int): First number
         b (int): Second number
 
     Returns:
-        int: Sum of a and b
+        dict: A dictionary with the result
     """
     print(f"Adding {a} + {b}...")
-    time.sleep(1)  # Simulate computation delay
-    return a + b
+    time.sleep(1)
+    return {"result": a + b}
 
-# Step 2: Define the cache function that only caches if the result is odd
+# Step 2: Define a cache function that caches only if the result is odd
 def cache_func(args, result):
     """
-    Determines whether the result should be cached.
-
-    Only caches if the result is an odd number.
+    Cache only if the result is odd.
 
     Args:
-        args (tuple): Arguments passed to the tool
-        result (Any): The result returned by the tool
+        args: Tool arguments
+        result (dict): Output from the tool
 
     Returns:
-        bool: True if result is odd (should be cached), False otherwise
+        bool: True to cache, False otherwise
     """
-    return result % 2 != 0  # Cache only if the result is odd
+    return result["result"] % 2 != 0
 
-# Step 3: Apply the cache function to the tool
 add_numbers.cache_function = cache_func
 
-# Step 4: Create an agent using the tool
+# Step 3: Define the agent
 agent = Agent(
     role="Calculator",
     goal="Add two numbers",
-    backstory="Can compute sums and cache results when odd.",
+    backstory="An agent that returns structured, validated results.",
     tools=[add_numbers],
     verbose=True
 )
 
-# Step 5: Define the task using the agent (we'll use user input here)
+# Step 4: Get user input and run the task
 def get_user_input_and_run_task():
-    """
-    Collects user input, creates a dynamic CrewAI task to add the two numbers,
-    and executes it via an agent using the add_numbers tool.
-    """
-    # Get two numbers from user input
-    num1 = int(input("Enter the first number: "))
-    num2 = int(input("Enter the second number: "))
-    
-    # Step 6: Create the task dynamically using the user input
+    num1 = int(input("Enter first number: "))
+    num2 = int(input("Enter second number: "))
+
+    # Step 5: Create a task with output_pydantic validation
     task = Task(
         description=f"Add {num1} and {num2} using the add_numbers tool.",
         agent=agent,
-        inputs={"a": num1, "b": num2}
+        output_pydantic=NumberValidation  # ✅ This enforces structured output
     )
 
-    # Step 7: Create and run the Crew (agent and task)
+    # Step 6: Run the Crew
     crew = Crew(
         agents=[agent],
         tasks=[task],
         verbose=True
     )
 
-    # Start the task
-    crew.kickoff()
+    # Step 7: Execute and get the validated result
+    result = crew.kickoff()
+    print("\nValidated Output:")
+    print(result)
 
-# Run the function to get user input and execute
+# Start it
 get_user_input_and_run_task()
