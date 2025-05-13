@@ -1,1 +1,20 @@
 https://github.com/insightbuilder/codeai_fusion/tree/main/crews_flows/building_crews
+
+
+https://github.com/unoconv/unoserver
+
+
+2. unoserver (LibreOffice in a microservice)
+
+
+
+bash
+pip install unoserver
+unoserver &  # Runs LibreOffice in the background
+
+
+
+python
+from unoserver import converter
+conv = converter.UnoConverter()
+conv.convert("input.docx", "output.pdf")
