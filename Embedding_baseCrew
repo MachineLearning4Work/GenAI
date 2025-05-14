@@ -1,0 +1,72 @@
+import os
+from crewai import Agent, Crew, Task, Process
+from crewai.project import CrewBase, agent, crew, task
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# ClassA: CustomEmbedding
+class CustomEmbedding:
+    def __init__(self):
+        self.model = os.getenv("EMBEDDER_MODEL", "CustomModel")
+
+    def get_embedding(self, text=""):
+        return f"Embedding for '{text}' from {self.model}"
+
+# Define embedder dictionary
+embedder = {
+    "provider": os.getenv("EMBEDDER_PROVIDER", "custom"),
+    "config": {
+        "embedder": CustomEmbedding()  # Instance of ClassA
+    }
+}
+
+# ClassB: CrewAI crew class
+@CrewBase
+class EmbeddingCrew:
+    def __init__(self, embedder_dict=None):
+        self.embedder_dict = embedder_dict or embedder  # Use provided or default embedder
+        self.storage_path = os.getenv("CREWAI_STORAGE_DIR", "./storage")
+
+    @agent
+    def embedding_agent(self) -> Agent:
+        return Agent(
+            role="Embedding Specialist",
+            goal="Generate embeddings for input text using the provided embedder",
+            backstory="You're an expert in text embeddings with deep knowledge of custom models.",
+            verbose=True,
+            tools=[],  # Add tools if needed
+            memory=True
+        )
+
+    @task
+    def embedding_task(self) -> Task:
+        return Task(
+            description="Generate an embedding for the input text: 'Hello, world!'",
+            agent=self.embedding_agent(),
+            expected_output="A string representing the embedding",
+            callback=self._use_embedder
+        )
+
+    def _use_embedder(self, task_output):
+        # Access CustomEmbedding instance from embedder dictionary
+        embedder_instance = self.embedder_dict["config"]["embedder"]
+        text = "Hello, world!"  # Example input from task
+        embedding = embedder_instance.get_embedding(text)
+        return f"Task output: {task_output}\nEmbedding: {embedding}"
+
+    @crew
+    def crew(self) -> Crew:
+        return Crew(
+            agents=self.agents,
+            tasks=self.tasks,
+            process=Process.sequential,
+            verbose=True
+        )
+
+# Run the crew
+if __name__ == "__main__":
+    crew_instance = EmbeddingCrew(embedder)
+    result = crew_instance.crew().kickoff()
+    print(result)
