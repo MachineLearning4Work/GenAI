@@ -1,0 +1,39 @@
+import os
+import shutil
+import re
+
+pdf_folder = 'path/to/pdf_folder'
+md_folder = 'path/to/md_folder'
+remain_folder = 'path/to/remain_folder'
+
+# Create remain folder if it doesn't exist
+os.makedirs(remain_folder, exist_ok=True)
+
+def normalize(name):
+    """Lowercase, remove extension, replace spaces, hyphens, and underscores with nothing."""
+    name = os.path.splitext(name)[0].lower()
+    return re.sub(r'[\s\-_]+', '', name)
+
+# Normalize PDF filenames
+pdf_files = [f for f in os.listdir(pdf_folder) if f.lower().endswith('.pdf')]
+pdf_normalized = {normalize(f): f for f in pdf_files}
+
+# Normalize expected .md filenames
+md_files = [f for f in os.listdir(md_folder) if f.lower().endswith('.md')]
+md_normalized = {
+    normalize(f.replace('clean_filtered_text_', '')) for f in md_files
+}
+
+# Find unmatched PDFs
+unmatched_pdfs = [
+    original_name for norm_name, original_name in pdf_normalized.items()
+    if norm_name not in md_normalized
+]
+
+# Copy unmatched PDFs to "remain" folder
+for pdf in unmatched_pdfs:
+    src = os.path.join(pdf_folder, pdf)
+    dst = os.path.join(remain_folder, pdf)
+    shutil.copy2(src, dst)
+
+print(f"Copied {len(unmatched_pdfs)} unmatched PDF(s) to '{remain_folder}'")
