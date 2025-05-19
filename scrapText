@@ -1,4 +1,20 @@
 
+As planned, please find the PDF and Word parsing results in the second set of links. 
+We processed 240 PDFs and 276 Word files (516 files total), in parsing result, two files are missing.   
+A possible explanation is that the 2- files were overlooked (missed) during folder transfers. 
+
+The extraction logged no errors, but I observed that inactive sessions were automatically terminated after prolonged idling
+This isn’t tied to a code error or OpenAI API timeout but seems to be a system-level cleanup.  
+
+
+
+
+
+For a long time, the biggest problem in machine learning has been improving and understanding robustness and generalization to OOD.
+
+We are just increasingly making more & more problems in-distribution but the models still don't generalize out-of-the-box to the tail of problems.
+
+
 
 
 
