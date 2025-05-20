@@ -1,4 +1,12 @@
 
+Hi,
+
+We now have an initial version of the memory configuration using a customized embedder. While we still need to test how well it retrieves conversations, they are currently being saved correctly in ChromaDB as short-term memory storage. Long-term memory is set to be saved in a specified SQLite path.
+
+The next step is to test this setup and integrate it into a sample project, such as our scenario planning use case.
+
+
+
 As planned, please find the PDF and Word parsing results in the second set of links. 
 We processed 240 PDFs and 276 Word files (516 files total), in parsing result, two files are missing.   
 A possible explanation is that the 2- files were overlooked (missed) during folder transfers. 
