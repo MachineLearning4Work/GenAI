@@ -1,4 +1,39 @@
+import os
+import shutil
+import re
 
+# Set your source and destination root paths
+source_root = '/path/to/source/folder'
+destination_root = '/another/path/to/company_contract_json'
+
+# Create the destination directory if it doesn't exist
+os.makedirs(destination_root, exist_ok=True)
+
+# Pattern to match folders starting with "clean_filtered_text_"
+pattern = re.compile(r'^clean_filtered_text_')
+
+# Track folder names already copied to avoid duplicates
+copied_folder_names = set()
+
+for dirpath, dirnames, filenames in os.walk(source_root):
+    matched_dirs = [d for d in dirnames if pattern.match(d)]
+
+    # Prevent os.walk from entering matched folders
+    dirnames[:] = [d for d in dirnames if d not in matched_dirs]
+
+    for dirname in matched_dirs:
+        if dirname not in copied_folder_names:
+            src_folder_path = os.path.join(dirpath, dirname)
+            dest_folder_path = os.path.join(destination_root, dirname)
+
+            if not os.path.exists(dest_folder_path):
+                shutil.copytree(src_folder_path, dest_folder_path)
+                copied_folder_names.add(dirname)
+
+
+
+
+==========
 import os
 import shutil
 import re
