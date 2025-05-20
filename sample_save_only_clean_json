@@ -1,3 +1,38 @@
+
+import os
+import shutil
+import re
+
+source_root = '/path/to/source/folder'
+destination_root = '/path/to/source/folder/company_contract_json'  # Flat structure
+
+# Create destination directory if it doesn't exist
+os.makedirs(destination_root, exist_ok=True)
+
+# Track copied filenames to avoid duplicates
+copied_files = set()
+
+# Pattern to match folder names starting with "clean_filtered_text_"
+folder_pattern = re.compile(r'^clean_filtered_text_')
+
+for dirpath, dirnames, filenames in os.walk(source_root):
+    for dirname in dirnames:
+        if folder_pattern.match(dirname):
+            source_folder = os.path.join(dirpath, dirname)
+            # Walk inside the matched folder to get all its files
+            for root, _, files in os.walk(source_folder):
+                for file in files:
+                    if file not in copied_files:
+                        source_file_path = os.path.join(root, file)
+                        destination_file_path = os.path.join(destination_root, file)
+                        shutil.copy2(source_file_path, destination_file_path)
+                        copied_files.add(file)
+
+
+
+
+==========
+
 import os
 import shutil
 import re
