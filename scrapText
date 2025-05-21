@@ -1,4 +1,24 @@
 
+
+import os
+import markdown
+
+folder_path = "path/to/your/md/files"
+for filename in os.listdir(folder_path):
+    if filename.endswith(".md"):
+        with open(os.path.join(folder_path, filename), 'r') as f:
+            text = f.read()
+            html = markdown.markdown(text)
+        
+        html_filename = filename[:-3] + ".html"
+        with open(os.path.join(folder_path, html_filename), 'w') as f:
+            f.write(html)
+
+
+
+================
+
+
 Hi,
 
 We now have an initial version of the memory configuration using a customized embedder. While we still need to test how well it retrieves conversations, they are currently being saved correctly in ChromaDB as short-term memory storage. Long-term memory is set to be saved in a specified SQLite path.
