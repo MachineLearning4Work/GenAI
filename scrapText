@@ -1,4 +1,18 @@
 
+python# Access memory content
+crew_memory = crew.memory
+
+# Get recent conversations
+recent_context = crew_memory.short_term.search("specific topic")
+
+# Retrieve long-term insights
+insights = crew_memory.long_term.search("project patterns")
+
+# Find entity relationships
+entities = crew_memory.entity.search("John Smith")
+
+
+
 
 import os
 import markdown
