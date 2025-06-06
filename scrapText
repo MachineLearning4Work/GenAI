@@ -1,103 +1,28 @@
+import pandas as pd
+from typing import Dict
 
-name: RoleNormalizer
-role: Job Title Normalization Expert
-goal: Identify and standardize job titles from unstructured contract data, mapping them to clear functions and seniority levels.
-backstory: With years of experience in contract analysis and text interpretation, you excel at deciphering and normalizing key fields. Your methodical approach ensures that every detail is captured and structured accurately. You are an expert in resolving informal, inconsistent, or outdated job titles into standardized corporate roles across industries.
-allow_delegation: fYour metalse
+def load_fx_rates_from_usd(excel_path: str) -> Dict[str, float]:
+    """
+    Reads exchange rates from an Excel sheet where USD is the source currency,
+    and returns a dictionary to convert each target currency back to USD.
 
+    Args:
+        excel_path (str): Path to the Excel file.
 
+    Returns:
+        Dict[str, float]: Dictionary of exchange rates (TARGET_CURRENCY -> USD conversion rate)
+    """
+    # Read the 'fx_rates' sheet
+    df = pd.read_excel(excel_path, sheet_name='fx_rates')
 
+    # Filter only rows where source currency is USD, and required fields are not null
+    df = df.dropna(subset=['SOURCE_CURRENCY', 'TARGET_CURRENCY', 'RATE'])
+    df = df[df['SOURCE_CURRENCY'].str.upper() == 'USD']
 
-python# Access memory content
-crew_memory = crew.memory
+    # Build the dictionary: TARGET_CURRENCY -> 1 / RATE (converted to USD)
+    exchange_rates: Dict[str, float] = {
+        row['TARGET_CURRENCY'].upper(): round(1 / float(row['RATE']), 4)
+        for _, row in df.iterrows()
+    }
 
-# Get recent conversations
-recent_context = crew_memory.short_term.search("specific topic")
-
-# Retrieve long-term insights
-insights = crew_memory.long_term.search("project patterns")
-
-# Find entity relationships
-entities = crew_memory.entity.search("John Smith")
-
-
-
-
-import os
-import markdown
-
-folder_path = "path/to/your/md/files"
-for filename in os.listdir(folder_path):
-    if filename.endswith(".md"):
-        with open(os.path.join(folder_path, filename), 'r') as f:
-            text = f.read()
-            html = markdown.markdown(text)
-        
-        html_filename = filename[:-3] + ".html"
-        with open(os.path.join(folder_path, html_filename), 'w') as f:
-            f.write(html)
-
-
-
-================
-
-
-Hi,
-
-We now have an initial version of the memory configuration using a customized embedder. While we still need to test how well it retrieves conversations, they are currently being saved correctly in ChromaDB as short-term memory storage. Long-term memory is set to be saved in a specified SQLite path.
-
-The next step is to test this setup and integrate it into a sample project, such as our scenario planning use case.
-
-
-
-As planned, please find the PDF and Word parsing results in the second set of links. 
-We processed 240 PDFs and 276 Word files (516 files total), in parsing result, two files are missing.   
-A possible explanation is that the 2- files were overlooked (missed) during folder transfers. 
-
-The extraction logged no errors, but I observed that inactive sessions were automatically terminated after prolonged idling
-This isn’t tied to a code error or OpenAI API timeout but seems to be a system-level cleanup.  
-
-
-
-
-
-For a long time, the biggest problem in machine learning has been improving and understanding robustness and generalization to OOD.
-
-We are just increasingly making more & more problems in-distribution but the models still don't generalize out-of-the-box to the tail of problems.
-
-
-
-
-
-As you can see in the log files, the pipeline returns an error for the file "A.PDF". There's also a message related to disk full, but that seems to be unrelated, as my network storage is already full. However, the actual error is different — it says "invalid image-based".
-
-Interestingly, when I run the same procedure on that file separately, everything works fine. So, I believe the issue may be due to hitting the OpenAI model continuously without pauses. Perhaps the model fails to respond properly under sustained load.
-
-
-
-
-
-
-
-As you can see here, I'm trying to implement a caching tool that might be useful for our project, specifically for caching data in different projects like scenario planning. However, it's not working as I expected. Based on my understanding of caching tools, we should have two functions: one to perform the actual job (in my case, add_numbers) and another function to manage the cache algorithm, which I've named cache_func(). In cache_func(), if the remainder of the input is odd, caching should be triggered, and the result should be retrieved directly from the cache without calling the main function again. To verify this, I've included sleep(10) in the add_numbers function to ensure that if the result is returned quickly, it's coming from the cache and not from re-executing the function. Despite this setup, it's not working as intended.
-
-
-
-
-
-
-ou’re testing a contract parsing pipeline that processes both Word and PDF files. You’ve noticed two issues:
-
-Tracked Changes in Word Files:
-
-When Word documents with "tracked changes" (e.g., "shall [develop/implement]") are converted to PDF, both the original and edited text appear.
-
-This could mislead the parser into extracting conflicting terms (e.g., "shall develop" vs. "shall implement").
-
-Strikethrough in PDFs:
-
-Some PDFs show strikethrough text (e.g., from tracked changes), but your parser ignores it (e.g., in page19.txt).
-
-Good news: The strikethrough isn’t harming the parsed output, but you want to confirm best practices.
-
-You ask: How should you handle these issues?
+    return exchange_rates
