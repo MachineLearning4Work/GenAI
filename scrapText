@@ -1,5 +1,19 @@
 
 
+from pydantic import BaseModel, Field
+from uuid import UUID
+from typing import Optional
+
+class SignatureExecutionStatus(BaseModel):
+    signature_id: UUID = Field(..., description="Unique ID linking to the signature section")
+    signer_a: Optional[str] = Field(None, description="Name of first signer (e.g., company rep)")
+    signer_b: Optional[str] = Field(None, description="Name of second signer (e.g., client rep)")
+    is_executed: bool = Field(..., description="True if both signers have signed")
+
+
+
+
+
 
 from pydantic import BaseModel, Field
 from typing import Optional
