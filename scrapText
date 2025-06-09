@@ -1,28 +1,15 @@
-import pandas as pd
-from typing import Dict
 
-def load_fx_rates_from_usd(excel_path: str) -> Dict[str, float]:
-    """
-    Reads exchange rates from an Excel sheet where USD is the source currency,
-    and returns a dictionary to convert each target currency back to USD.
 
-    Args:
-        excel_path (str): Path to the Excel file.
 
-    Returns:
-        Dict[str, float]: Dictionary of exchange rates (TARGET_CURRENCY -> USD conversion rate)
-    """
-    # Read the 'fx_rates' sheet
-    df = pd.read_excel(excel_path, sheet_name='fx_rates')
+from pydantic import BaseModel, Field
+from typing import Optional
 
-    # Filter only rows where source currency is USD, and required fields are not null
-    df = df.dropna(subset=['SOURCE_CURRENCY', 'TARGET_CURRENCY', 'RATE'])
-    df = df[df['SOURCE_CURRENCY'].str.upper() == 'USD']
-
-    # Build the dictionary: TARGET_CURRENCY -> 1 / RATE (converted to USD)
-    exchange_rates: Dict[str, float] = {
-        row['TARGET_CURRENCY'].upper(): round(1 / float(row['RATE']), 4)
-        for _, row in df.iterrows()
-    }
-
-    return exchange_rates
+class ServiceLocation(BaseModel):
+    service_id: str = Field(..., description="Unique identifier for the service")
+    location_index: int = Field(..., description="Incremental index per location")
+    city: str = Field(..., description="City name")
+    state: str = Field(..., description="Province or state name")
+    country: str = Field(..., description="Official country name")
+    continent: str = Field(..., description="Continent name")
+    full_address: Optional[str] = Field(None, description="Full address if available")
+    original: str = Field(..., description="Original input string")
