@@ -1,12 +1,89 @@
-The initial version of the service, role(and resource) standardization framework is now ready for your review. This includes:
 
-Location
-Fee structure
 
-Current implementation covers:
-✅ 2 agent 
-✅ 4 defined tasks
-✅ 2 tools
+import csv
+
+# Your input string
+data_string = """production management , data scientist  
+technology management , data risk 
+development , java programmer"""
+
+# Split into lines and process
+lines = [line.strip().split(' , ') for line in data_string.split('\n') if line.strip()]
+
+# Write to CSV
+with open('roles.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['role_group', 'role'])  # Write header
+    writer.writerows(lines)  # Write data
+
+
+
+
+import csv
+
+def string_to_csv(input_string, header1, header2, output_file='roles.csv'):
+    """
+    Convert a string of comma-separated values to CSV with custom headers
+    
+    Args:
+        input_string: Input text with lines of "value1, value2"
+        header1: First column header name
+        header2: Second column header name
+        output_file: Output CSV filename
+    """
+    lines = [line.strip().split(',') for line in input_string.split('\n') if line.strip()]
+    cleaned_lines = [[item.strip() for item in line] for line in lines]
+    
+    with open(output_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([header1, header2])
+        writer.writerows(cleaned_lines)
+    print(f"CSV file '{output_file}' created successfully!")
+
+# Example usage:
+data_string = """production management , data scientist  
+technology management , data risk 
+development , java programmer"""
+
+string_to_csv(data_string, 'department', 'job_title', 'company_roles.csv')
+
+
+
+
+import csv
+
+def read_csv_to_dict(csv_file):
+    """
+    Reads a CSV file and returns a dictionary with header keys
+    Each key contains a list of values from that column
+    
+    Args:
+        csv_file: Path to the CSV file
+        
+    Returns:
+        Dictionary with {header: [values]} structure
+    """
+    with open(csv_file, mode='r') as file:
+        reader = csv.DictReader(file)
+        result = {header: [] for header in reader.fieldnames}
+        
+        for row in reader:
+            for header in reader.fieldnames:
+                result[header].append(row[header])
+                
+    return result
+
+# Example usage:
+data = read_csv_to_dict('roles.csv')
+print(data)
+
+# Access specific columns:
+print("\nRole Groups:", data['role_group'])
+print("Roles:", data['role'])
+
+
+
+
 
 
 @tool
