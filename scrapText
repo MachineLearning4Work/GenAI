@@ -1,29 +1,30 @@
+@tool
+def get_rate_exchange_v2(service_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert the 'amount' in the 'rate' dictionary to USD if it is in a different currency.
+    Returns a dictionary with service_id, converted amount, currency (USD), hours_committed, and annual_fee.
+    """
+    my_dict_exchange_rates = exchange_rates()
+    rate_info = service_data.get('rate', {})
+    
+    amount = rate_info.get('amount', 0)
+    currency = rate_info.get('currency', 'USD')
+    hours_committed = service_data.get('hours_committed', 0)
 
+    if currency.upper() != 'USD':
+        rate = my_dict_exchange_rates.get(currency.upper())
+        if rate:
+            amount *= rate
+        else:
+            raise ValueError(f"Exchange rate for currency '{currency}' not found")
 
-from pydantic import BaseModel, Field
-from uuid import UUID
-from typing import Optional
+    amount = round(amount, 2)
+    annual_fee = round(amount * 1880, 2)
 
-class SignatureExecutionStatus(BaseModel):
-    signature_id: UUID = Field(..., description="Unique ID linking to the signature section")
-    signer_a: Optional[str] = Field(None, description="Name of first signer (e.g., company rep)")
-    signer_b: Optional[str] = Field(None, description="Name of second signer (e.g., client rep)")
-    is_executed: bool = Field(..., description="True if both signers have signed")
-
-
-
-
-
-
-from pydantic import BaseModel, Field
-from typing import Optional
-
-class ServiceLocation(BaseModel):
-    service_id: str = Field(..., description="Unique identifier for the service")
-    location_index: int = Field(..., description="Incremental index per location")
-    city: str = Field(..., description="City name")
-    state: str = Field(..., description="Province or state name")
-    country: str = Field(..., description="Official country name")
-    continent: str = Field(..., description="Continent name")
-    full_address: Optional[str] = Field(None, description="Full address if available")
-    original: str = Field(..., description="Original input string")
+    return {
+        'service_id': service_data.get('service_id'),
+        'amount': amount,
+        'currency': 'USD',
+        'hours_committed': hours_committed,
+        'annual_fee': annual_fee
+    }
