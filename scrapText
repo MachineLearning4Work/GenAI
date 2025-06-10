@@ -1,3 +1,14 @@
+The initial version of the service, role(and resource) standardization framework is now ready for your review. This includes:
+
+Location
+Fee structure
+
+Current implementation covers:
+✅ 2 agent 
+✅ 4 defined tasks
+✅ 2 tools
+
+
 @tool
 def get_rate_exchange_v2(service_data: Dict[str, Any]) -> Dict[str, Any]:
     """
