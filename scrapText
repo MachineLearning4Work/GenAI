@@ -1,6 +1,1 @@
-I made the modifications, and the first crew (Cleaning) ran successfully after I added the missing function in the tools folder. 
 
-The second Crew (Parsing) initially had an issue importing output_model from the current path (just added it), 
-also "FeeBreakdown" should be "FeeBreakdownItem"  and it's now running.
-
-I'll keep you posted on the progress
