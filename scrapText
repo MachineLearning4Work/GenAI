@@ -1,4 +1,29 @@
 
+legal_entities = [
+    "Individual (Natural Person)",
+    "Sole Proprietorship",
+    "General Partnership (GP)",
+    "Limited Partnership (LP)",
+    "Limited Liability Partnership (LLP)",
+    "Limited Liability Company (LLC)",
+    "Corporation (Inc., Corp., Ltd.)",
+    "Non-Profit Organization / NGO",
+    "Trust (via Trustee)",
+    "Joint Venture (JV)",
+    "Cooperative (Co-op)",
+    "Government Entity / Public Authority",
+    "Municipality or Local Government",
+    "Educational Institution (e.g., University)",
+    "Association (e.g., Homeowners’ Association, Trade Association)",
+    "Religious Organization / Church",
+    "Foreign Entity (e.g., foreign corporation or LLC registered to do business)",
+    "Estate (via Executor or Administrator)",
+    "Union or Labor Organization"
+]
+
+
+
+
 
 import csv
 
