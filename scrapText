@@ -1,1 +1,40 @@
+import json
+import os
+from pathlib import Path
 
+def combine_json_files(file_list, input_folder="."):
+    """
+    Loads multiple JSON files with UTF-8 encoding and combines them into:
+    {
+      "filename1": { ...content... },
+      "filename2": { ...content... }
+    }
+
+    Args:
+        file_list (list): List of JSON filenames (e.g. ['file1.json', 'file2.json'])
+        input_folder (str): Path to folder containing files (default: current directory)
+
+    Returns:
+        dict: Combined structure with filename keys
+    """
+    result = {}
+    
+    for filename in file_list:
+        file_path = Path(input_folder) / filename
+        
+        try:
+            # Load with explicit UTF-8 encoding
+            with open(file_path, 'r', encoding='utf-8') as f:
+                key = Path(filename).stem  # Get filename without extension
+                result[key] = json.load(f)
+                
+        except FileNotFoundError:
+            print(f"⚠️ File not found: {file_path}")
+        except json.JSONDecodeError:
+            print(f"⚠️ Invalid JSON in {filename}")
+        except UnicodeDecodeError:
+            print(f"⚠️ Failed to decode {filename} as UTF-8")
+        except Exception as e:
+            print(f"⚠️ Unexpected error with {filename}: {str(e)}")
+    
+    return result
