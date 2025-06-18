@@ -1,5 +1,109 @@
 import json
 import os
+
+def convert_currency_fields(json_data, target_keys, get_exchange_rate):
+    """
+    Recursively convert target key values in any nested JSON structure
+    based on currency exchange rates, if currency is not USD.
+    """
+    def recursive_convert(obj, current_currency=None):
+        if isinstance(obj, dict):
+            currency_key = next((k for k in obj if k.lower() == "currency"), None)
+            if currency_key:
+                current_currency = obj[currency_key]
+            
+            if current_currency and current_currency.upper() != "USD":
+                try:
+                    rate = get_exchange_rate(current_currency)
+                    for key in target_keys:
+                        if key in obj and isinstance(obj[key], (int, float)):
+                            obj[key] = round(obj[key] * rate, 2)
+                    if currency_key:
+                        obj[currency_key] = "USD"
+                    current_currency = "USD"
+                except Exception as e:
+                    print(f"Warning: Could not convert currency '{current_currency}': {e}")
+            
+            for k, v in obj.items():
+                obj[k] = recursive_convert(v, current_currency)
+        
+        elif isinstance(obj, list):
+            return [recursive_convert(item, current_currency) for item in obj]
+        
+        return obj
+    
+    return recursive_convert(json_data)
+
+def get_exchange_rate(currency):
+    """
+    Return exchange rate of given currency to USD.
+    """
+    rates = {
+        "EUR": 1.1,
+        "GBP": 1.3,
+        "CHF": 1.12,
+        "SEK": 0.092,
+        "NOK": 0.095,
+        "DKK": 0.15,
+        "CZK": 0.044,
+        "HUF": 0.0028,
+        "PLN": 0.25,
+        "RON": 0.22,
+        "HRK": 0.14,
+        "ISK": 0.0073,
+        "RSD": 0.0091,
+        "BGN": 0.56,
+        "TRY": 0.031,
+        "UAH": 0.025,
+        "MKD": 0.017,
+    }
+    return rates.get(currency.upper(), 1.0)  # fallback to 1.0
+
+def process_json_file(input_path, save_path, output_filename, target_keys):
+    """
+    Load a JSON file, convert currency fields, and save to a new file.
+
+    Parameters:
+        input_path (str): Full path to the input JSON file.
+        save_path (str): Directory to save the output file.
+        output_filename (str): Filename for the saved result.
+        target_keys (list): Keys to convert (e.g. ['fee', 'tax']).
+    """
+    with open(input_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
+    converted_data = convert_currency_fields(data, target_keys, get_exchange_rate)
+
+    # Ensure the output directory exists
+    os.makedirs(save_path, exist_ok=True)
+    
+    full_output_path = os.path.join(save_path, output_filename)
+    
+    with open(full_output_path, 'w', encoding='utf-8') as f:
+        json.dump(converted_data, f, indent=2)
+    
+    print(f"Converted JSON saved to: {full_output_path}")
+
+===============
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import json
+import os
 from pathlib import Path
 
 def combine_json_files(file_list, input_folder="."):
