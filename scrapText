@@ -1,3 +1,89 @@
+============
+import json
+import re
+from pathlib import Path
+import argparse
+
+def extract_valid_json(text):
+    """
+    Extract valid JSON from text.
+    Steps:
+    1. Extract JSON inside fenced blocks 
+    2. If none found, try parsing entire text as JSON.
+    3. If that fails, try parsing from first line starting with { or [ till the end.
+    Returns parsed JSON object (dict or list), or empty dict if none valid.
+    """
+    # 1. Extract fenced JSON blocks
+    fenced_blocks = []
+    fenced_blocks += re.findall(r"'''json\s*([\s\S]*?)'''", text, re.IGNORECASE)
+    fenced_blocks += re.findall(r'"""json\s*([\s\S]*?)"""', text, re.IGNORECASE)
+    fenced_blocks += re.findall(r'```json\s*([\s\S]*?)```', text, re.IGNORECASE)
+
+    candidates = fenced_blocks if fenced_blocks else [text]
+
+    for block in candidates:
+        block = block.strip()
+        try:
+            parsed = json.loads(block)
+            if isinstance(parsed, (dict, list)):
+                return parsed
+        except json.JSONDecodeError:
+            continue
+
+    # 2. Try parsing entire text
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, (dict, list)):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    # 3. Try parsing from first line that looks like JSON start
+    lines = text.splitlines()
+    json_start_index = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith('{') or stripped.startswith('['):
+            json_start_index = i
+            break
+
+    if json_start_index is not None:
+        json_candidate = '\n'.join(lines[json_start_index:])
+        try:
+            parsed = json.loads(json_candidate)
+            if isinstance(parsed, (dict, list)):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+
+    # If no valid JSON found
+    return {}
+
+def clean_json_files(input_folder, output_folder):
+    input_path = Path(input_folder)
+    output_path = Path(output_folder)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    for file_path in input_path.glob("*.json"):
+        with open(file_path, 'r', encoding='utf-8') as f:
+            raw_text = f.read()
+
+        cleaned_json = extract_valid_json(raw_text)
+
+        output_file = output_path / file_path.name
+        with open(output_file, 'w', encoding='utf-8') as out:
+            json.dump(cleaned_json, out, indent=2)
+
+        if cleaned_json:
+            print(f"✅ Cleaned: {file_path.name}")
+        else:
+            print(f"⚠️  No valid JSON found in {file_path.name}, wrote empty object.")
+
+
+
+
+
+==========
 import json
 import os
 
