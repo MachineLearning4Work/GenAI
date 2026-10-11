@@ -1,5 +1,23 @@
 # Project Proposal: Local CrewAI Business-Plan Pipeline with Jenkins
 
+## Platform and Deployment Preconditions (Important)
+
+**This project assumes:**
+
+- You are running **Windows** with **Docker Desktop** already installed and running.
+- **Jenkins and MinIO will ONLY be deployed as Docker containers via Docker Compose.**
+- **No manual Jenkins or MinIO installation is required or supported. All core services run exclusively in containers managed by Docker Compose.**
+
+**Key explicit requirements:**
+
+- You will start services (Jenkins, MinIO, CrewAI app) together using Docker Compose. Example: `docker compose up --build`.
+- Jenkins will be provisioned from the official Jenkins Docker image within the Compose stack.
+- Jenkins will be accessible at [http://localhost:8080](http://localhost:8080) (or the mapped port you specify).
+- Jenkins service in Docker Compose will mount the Docker socket for in-container Docker control: `//var/run/docker.sock:/var/run/docker.sock` (with syntax adjusted for Windows if needed).
+- Jenkins persistent data is stored in a Docker volume mounted at `/var/jenkins_home`.
+- Do **not** attempt to install Jenkins or MinIO manually.
+- All file/volume mappings in Compose must support Windows paths and Docker Desktop conventions.
+
 ## 1. Project summary
 
 Build a local learning project that accepts a business idea in natural language and uses three CrewAI tasks and ONLY one agent to draft and review a practical business proposal. The single agent is reused for all three tasks; each task's own description and expected output define the job to perform. Each task completes one job (TASK), returns data matching a Pydantic model, and saves its own validated JSON file. The workflow passes earlier task results forward as context so later task can build on them.
@@ -205,6 +223,17 @@ A key distinction: **changing application code or a committed default prompt can
 
 ### Local mode: recommended starting point
 
+**Jenkins in Docker (not manual install!):**
+
+- Jenkins must run as a Docker container from the official Jenkins image. This is managed entirely via Docker Compose. There is no scenario where Jenkins is installed directly on Windows or run outside of Docker for this project.
+- When starting Jenkins for the first time, access the web UI at `localhost:8080`, retrieve the initial admin password from the Jenkins data volume/log, and perform the unlock/admin setup in your browser. Install recommended plugins and create the pipeline job linking to your repo.
+
+- Docker Compose service declaration for Jenkins must include (adjust for platform specifics):
+    - Jenkins image (e.g., `jenkins/jenkins:lts`)
+    - `//var/run/docker.sock:/var/run/docker.sock` volume for Docker-in-Docker control
+    - `jenkins_home` Docker volume for persistence
+    - Published port (typically 8080)
+
 Run Jenkins on the learner's own computer or use GitHub Actions for branch-triggered automation. The project is designed so that a push to a branch such as `docker_compose` triggers a rebuild of the local stack. Before building, the pipeline removes older containers and images with the same project name so the new build starts cleanly.
 
 The build flow can include:
@@ -225,6 +254,8 @@ This is useful even if the AI generation is not run on every code change. A sens
 
 ### Branch-triggered Docker Compose workflow
 
+**Note:** All CI/CD and local workflow orchestration is performed within containerized services. There is never a requirement to install Jenkins, MinIO, or the pipeline app directly to Windows—always use Docker Compose.
+
 The project should use environment variables for all ports and settings, for example:
 
 - `APP_PORT`
@@ -239,11 +270,15 @@ This makes the system portable and keeps deployment configuration out of code. A
 
 ### Optional webhook mode
 
+**Note:** If a webhook is required for remote triggering (optional only!), use a relay/tunnel service (such as ngrok) since Docker Desktop does not make local ports public by default. However, for default local learning, triggering Jenkins manually or by branch push is recommended and does not require any external access.
+
 A webhook is GitHub's event message saying that a push occurred. Jenkins can receive it and start the configured job. But a local Jenkins server at `localhost` is not reachable by GitHub. GitHub's documentation explicitly says that `localhost` and `127.0.0.1` cannot be webhook payload URLs.[1]
 
 To learn webhook delivery while keeping Jenkins on the local machine, use a webhook forwarding relay or a secure tunnel and configure GitHub with its reachable URL. This is an optional learning step, not required for the pipeline. Protect Jenkins with authentication, use a webhook secret where supported, expose only what is needed, and stop the relay when finished. A public server with proper access controls is another option, but it is not needed for this local learning project.
 
 ### GitHub Free considerations
+
+**Tip:** Your `.devcontainer` or Compose service files may require small adjustments for Windows path compatibility if you relocate the project.
 
 A personal GitHub Free account includes unlimited public and private repositories.[2] Jenkins itself is open-source software. The model-provider API can incur separate costs depending on provider and usage. The project should use a private repository by default if prompts, configuration, or business materials are sensitive, and should never commit API keys.
 
@@ -258,6 +293,9 @@ The first version should save outputs in both local run folders and MinIO. The l
 MinIO is run from a Docker image, not as a manual local install. The project should use `docker-compose.yml` to start MinIO and the application together, with environment variables controlling the ports, bucket name, and credentials.
 
 ## 8. Suggested repository layout
+
+**Reminder:** All services (including Jenkins!) are defined and started exclusively via `docker-compose.yml` as containers.
+
 
 ```text
 crewai-business-plan-pipeline/
@@ -340,6 +378,9 @@ Add one MLflow run per generated plan. Record safe metadata and validation resul
 Expose the existing pipeline through a small local API so a user can submit a new business idea without editing source code. Keep Jenkins or GitHub Actions focused on testing and delivery of code changes, not on restarting the API for every user prompt.
 
 ## 11. Definition of done
+
+- No manual Jenkins or MinIO installation, configuration, or usage required—all setup, build, and pipeline functionality must work within containers managed by Docker Compose on Windows with Docker Desktop.
+
 
 The core project is complete when:
 
