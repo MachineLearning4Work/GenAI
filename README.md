@@ -62,9 +62,14 @@ This repository is intentionally minimal for teaching. See `project_brief_review
 MinIO notes, licensing, and Windows setup
 ---------------------------------------
 
-Recommended MinIO image for a single-node local (free) instance
+
+Recommended MinIO image and license download for a single-node local (free) instance
 
 - Preferred (community/standalone): `minio/minio:RELEASE` — this is the official MinIO server image. It is suitable for running a single-node local object store for development and teaching. If your environment blocks `docker pull` from Docker Hub, you may need to `docker login` or use an internal registry mirror.
+
+- **To download the latest Aistor (MinIO Community Edition) Docker image with a free developer license, see:**
+	- https://www.min.io/download/aistor-server
+	- This page provides the latest image tag, instructions, and a link to obtain your free standalone license (required to run the container).
 - Alternative vendor/editions (for example `quay.io/minio/aistor/minio:latest`) may require a license for certain features (as experienced in this project). If you run such an image it may deny bucket creation until a valid license is installed.
 
 License guidance
