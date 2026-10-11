@@ -1,0 +1,23 @@
+{
+  "overall_assessment": "Plausible but needs validation",
+  "strengths": [
+    "Clear audience and deliverables"
+  ],
+  "critical_risks": [
+    {
+      "severity": "medium",
+      "explanation": "Pricing may be too high"
+    }
+  ],
+  "unsupported_or_missing_evidence": [
+    "Actual willingness to pay"
+  ],
+  "consistency_checks": [
+    "Assumptions align with offer"
+  ],
+  "recommended_experiments": [
+    "Pilot cohort"
+  ],
+  "day_30_action_plan": null,
+  "decision": "proceed_to_validation"
+}

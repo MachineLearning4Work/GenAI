@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "crewai-business-plan-pipeline"
+version = "0.1.0"
+description = "Local CrewAI business-plan pipeline (teaching-friendly)"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pydantic = "^1.10"
+boto3 = "^1.28"
+requests = "^2.31"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.3"

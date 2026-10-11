@@ -1,0 +1,59 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    container_name: crewai_app
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_BUCKET_NAME=business-plan-bucket
+    volumes:
+      - ./runs:/app/runs
+    depends_on:
+      - minio
+
+  web:
+    build: .
+    container_name: crewai_web
+    command: uvicorn business_plan.api:app --host 0.0.0.0 --port 8000
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_BUCKET_NAME=business-plan-bucket
+    ports:
+      - "8000:8000"
+    depends_on:
+      - minio
+
+  minio:
+    # Use the requested MinIO image from quay.io which may be available in your environment
+    image: quay.io/minio/aistor/minio:latest
+    container_name: crewai_minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: crewai_jenkins
+    # Bind Jenkins web UI to host port 8081 to avoid conflicts with other services
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+
+volumes:
+  minio_data:
+  jenkins_home:

@@ -1,0 +1,27 @@
+{
+  "idea_summary": "test idea from automated run",
+  "target_segments": [
+    {
+      "name": "Professionals",
+      "characteristics": "working professionals",
+      "needs": "practical skills",
+      "barriers": "time/cost"
+    }
+  ],
+  "customer_pain_points": [
+    "Need practical ML for work"
+  ],
+  "market_assumptions": [
+    "Professionals prefer evening/weekend courses"
+  ],
+  "alternatives_and_competitors": [
+    "Local universities, online courses"
+  ],
+  "validation_questions": [
+    "Would you pay for a 10-week evening course?"
+  ],
+  "recommended_research_actions": [
+    "Survey 100 local professionals"
+  ],
+  "confidence_notes": "Low \u2014 hypothesis"
+}
