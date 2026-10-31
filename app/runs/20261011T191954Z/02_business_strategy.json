@@ -1,0 +1,24 @@
+{
+  "positioning_statement": "Affordable practical ML course for working professionals",
+  "value_proposition": "Hands-on, relevant projects that apply at work",
+  "course_offer": {
+    "format": "hybrid",
+    "duration": "10 weeks"
+  },
+  "pricing_hypotheses": [
+    "$499 per learner"
+  ],
+  "go_to_market_plan": [
+    "Local meetup partnerships"
+  ],
+  "revenue_model": "Course fees",
+  "key_resources_and_cost_categories": [
+    "Instructor, venue, materials"
+  ],
+  "success_metrics": [
+    "% of learners using skills at work"
+  ],
+  "dependencies_and_assumptions": [
+    "Instructor availability"
+  ]
+}

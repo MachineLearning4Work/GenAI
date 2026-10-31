@@ -1,0 +1,19 @@
+# Isolated, disposable CI stack: no host ports or client-side bind mounts.
+services:
+  app:
+    ports: !reset []
+    volumes: !override
+      - ci_runs:/app/runs
+    environment:
+      OPENAI_API_KEY: ""
+      MINIO_ENABLED: "true"
+      MINIO_SECURE: "false"
+  minio:
+    ports: !reset []
+    volumes: !override
+      - minio_data:/data
+      - ci_license:/licenses
+
+volumes:
+  ci_runs:
+  ci_license:

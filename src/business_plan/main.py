@@ -1,14 +1,18 @@
-"""Minimal runnable entrypoint for the business-plan pipeline.
+"""Legacy deterministic CLI demonstration.
 
-This CLI accepts a short idea text and runs three placeholder tasks that
-exercise the Pydantic models and local file output. It's intentionally
-simple for teaching and can be extended to call CrewAI/model providers.
+The authenticated FastAPI proposal endpoints use the real CrewAI workflow in
+:mod:`business_plan.workflow`. This CLI is retained for the original
+offline-friendly teaching example and does not call an LLM.
 """
 import argparse
-import json
+import logging
+
+from . import config
 from .models import MarketResearch, BusinessStrategy, BusinessPlanReview, TargetSegment
-from .storage import make_run_id, write_json
+from .storage import make_run_id, write_json, write_text
 from .report import render_markdown
+
+logger = logging.getLogger(__name__)
 
 
 def task1(idea: str) -> MarketResearch:
@@ -62,19 +66,26 @@ def run(idea: str, run_id: str | None = None):
     """
     if run_id is None:
         run_id = make_run_id()
+
+    logger.info(
+        "Starting run %s (openai_key=%s, model=%s)",
+        run_id,
+        config.masked_openai_key(),
+        config.OPENAI_MODEL,
+    )
+
     mr = task1(idea)
     bs = task2(mr)
     br = task3(mr, bs)
 
-    path1 = write_json(run_id, '01_market_research.json', mr.dict())
-    path2 = write_json(run_id, '02_business_strategy.json', bs.dict())
-    path3 = write_json(run_id, '03_business_plan_review.json', br.dict())
+    path1 = write_json(run_id, '01_market_research.json', mr.model_dump(by_alias=True))
+    path2 = write_json(run_id, '02_business_strategy.json', bs.model_dump(by_alias=True))
+    path3 = write_json(run_id, '03_business_plan_review.json', br.model_dump(by_alias=True))
 
     md = render_markdown(mr, bs, br)
-    # write actual markdown file
-    from .storage import write_text
     md_path = write_text(run_id, 'business_plan.md', md)
 
+    logger.info("Run completed: %s", run_id)
     print(f"Run completed: {run_id}")
     print(path1, path2, path3, md_path)
     return run_id
@@ -83,8 +94,10 @@ def run(idea: str, run_id: str | None = None):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--idea', '-i', default='An affordable practical ML course in Montreal')
+    parser.add_argument('--run-id', default=None, help='Reuse an existing run id')
     args = parser.parse_args()
-    run(args.idea)
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s %(name)s: %(message)s')
+    run(args.idea, run_id=args.run_id)
 
 
 if __name__ == '__main__':

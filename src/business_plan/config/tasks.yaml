@@ -1,0 +1,46 @@
+MarketResearch:
+  description: >-
+    Research the market for this business idea: {business_idea_json}.
+    Identify target customers, their problems, relevant industry trends,
+    competitors, opportunities, risks, and research sources. Separate verified
+    facts from assumptions. Do not fabricate sources, market sizes, or
+    statistics; describe uncertainty where reliable data is unavailable.
+  expected_output: >-
+    A JSON object with business_idea_summary, target_customers,
+    customer_problems, market_size_assumptions, industry_trends, competitors,
+    competitive_advantages, market_opportunities, market_risks, and
+    research_sources. Use empty arrays or objects when evidence is unavailable.
+    Return only data that conforms to this contract.
+  agent: BusinessPlanner
+
+BusinessStrategy:
+  description: >-
+    Develop a strategy for this business idea: {business_idea_json}. Use the
+    validated MarketResearch output as source material: {market_research_json}.
+    Address value proposition, target market, customer segments, positioning,
+    revenue and pricing, go-to-market, marketing, sales, operations, KPIs,
+    risks, and mitigations. Do not contradict research findings unless you
+    explicitly identify the conflict as an assumption requiring validation.
+  expected_output: >-
+    A JSON object with value_proposition, target_market, customer_segments,
+    product_positioning, revenue_model, pricing_strategy,
+    go_to_market_strategy, marketing_channels, sales_strategy,
+    operational_requirements, key_performance_indicators, strategic_risks,
+    and risk_mitigations. Return only data that conforms to this contract.
+  agent: BusinessPlanner
+
+BusinessPlanReview:
+  description: >-
+    Critically review this business idea: {business_idea_json}, the validated
+    MarketResearch output: {market_research_json}, and the validated
+    BusinessStrategy output: {business_strategy_json}. Explain important
+    assumptions that require validation before launch. Assess feasibility and
+    legal, operational, and technical risks.
+  expected_output: >-
+    A JSON object with executive_summary, business_strengths,
+    business_weaknesses, identified_gaps, financial_assumptions,
+    feasibility_assessment, legal_risks, operational_risks, technical_risks,
+    recommended_improvements, launch_readiness_score, overall_recommendation,
+    and next_steps. launch_readiness_score must be an integer from 0 to 100.
+    Return only data that conforms to this contract.
+  agent: BusinessPlanner

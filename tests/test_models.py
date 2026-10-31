@@ -34,3 +34,20 @@ def test_business_plan_review_model():
         decision='proceed'
     )
     assert br.decision == 'proceed'
+
+
+def test_action_plan_accepts_field_name_and_alias():
+    """Regression: populating by field name used to be silently discarded."""
+    common = dict(
+        overall_assessment='ok',
+        strengths=['s'],
+        critical_risks=[],
+        unsupported_or_missing_evidence=[],
+        decision='proceed',
+    )
+    by_name = BusinessPlanReview(**common, day_30_action_plan=['step one'])
+    by_alias = BusinessPlanReview(**common, **{'30_day_action_plan': ['step one']})
+
+    assert by_name.day_30_action_plan == ['step one']
+    assert by_alias.day_30_action_plan == ['step one']
+    assert by_name.model_dump(by_alias=True)['30_day_action_plan'] == ['step one']
