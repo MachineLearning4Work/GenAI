@@ -1,0 +1,13 @@
+.git
+.env
+.env.*
+*.license
+.venv
+**/__pycache__
+.pytest_cache
+runs
+app
+mc-config
+guide
+.agents
+.vscode

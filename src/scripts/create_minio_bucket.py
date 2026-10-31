@@ -5,15 +5,20 @@ create the configured bucket. It is idempotent: if the bucket exists it exits
 successfully.
 """
 import os
+
 import boto3
 from botocore.client import Config
 
 
 def main():
     endpoint = os.getenv("MINIO_ENDPOINT", "minio:9000")
-    access_key = os.getenv("MINIO_ROOT_USER", "minioadmin")
-    secret_key = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
+    access_key = os.getenv("MINIO_ROOT_USER")
+    secret_key = os.getenv("MINIO_ROOT_PASSWORD")
     bucket = os.getenv("MINIO_BUCKET_NAME", "business-plan-bucket")
+    if not access_key or not secret_key:
+        raise SystemExit(
+            "MINIO_ROOT_USER and MINIO_ROOT_PASSWORD must be set."
+        )
 
     # Ensure endpoint_url includes scheme
     if not endpoint.startswith("http"):

@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from datetime import datetime
+from typing import Literal, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TargetSegment(BaseModel):
@@ -33,6 +35,10 @@ class BusinessStrategy(BaseModel):
 
 
 class BusinessPlanReview(BaseModel):
+    # populate_by_name lets callers pass `day_30_action_plan=...` while the
+    # serialized artifact keeps the published `30_day_action_plan` name.
+    model_config = ConfigDict(populate_by_name=True)
+
     overall_assessment: str
     strengths: List[str]
     critical_risks: List[dict]
@@ -41,3 +47,94 @@ class BusinessPlanReview(BaseModel):
     recommended_experiments: Optional[List[str]] = None
     day_30_action_plan: Optional[List[str]] = Field(None, alias="30_day_action_plan")
     decision: str
+
+
+class BusinessIdea(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=5000)
+    target_market: str = Field(min_length=1, max_length=1000)
+    location: Optional[str] = Field(default=None, max_length=500)
+    budget: Optional[str] = Field(default=None, max_length=500)
+    additional_context: Optional[str] = Field(default=None, max_length=5000)
+
+
+class BusinessProposalRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    business_idea: BusinessIdea
+
+
+class ProposalTaskOutput(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
+class MarketResearchOutput(ProposalTaskOutput):
+    business_idea_summary: str
+    target_customers: List[str]
+    customer_problems: List[str]
+    market_size_assumptions: dict[str, object]
+    industry_trends: List[str]
+    competitors: List[str]
+    competitive_advantages: List[str]
+    market_opportunities: List[str]
+    market_risks: List[str]
+    research_sources: List[str]
+
+
+class BusinessStrategyOutput(ProposalTaskOutput):
+    value_proposition: str
+    target_market: dict[str, object]
+    customer_segments: List[str]
+    product_positioning: str
+    revenue_model: dict[str, object]
+    pricing_strategy: dict[str, object]
+    go_to_market_strategy: dict[str, object]
+    marketing_channels: List[str]
+    sales_strategy: dict[str, object]
+    operational_requirements: List[str]
+    key_performance_indicators: List[str]
+    strategic_risks: List[str]
+    risk_mitigations: List[str]
+
+
+class BusinessPlanReviewOutput(ProposalTaskOutput):
+    executive_summary: str
+    business_strengths: List[str]
+    business_weaknesses: List[str]
+    identified_gaps: List[str]
+    financial_assumptions: dict[str, object]
+    feasibility_assessment: dict[str, object]
+    legal_risks: List[str]
+    operational_risks: List[str]
+    technical_risks: List[str]
+    recommended_improvements: List[str]
+    launch_readiness_score: int = Field(ge=0, le=100)
+    overall_recommendation: str
+    next_steps: List[str]
+
+
+class ProposalError(BaseModel):
+    code: Literal["TASK_FAILED", "STORAGE_FAILED", "CONFIGURATION_ERROR"]
+    task: Optional[str] = None
+    message: str
+
+
+class ProposalStatus(BaseModel):
+    proposal_id: str
+    status: Literal["pending", "running", "completed", "failed"]
+    task: Optional[str] = None
+    error: Optional[ProposalError] = None
+
+
+class FinalBusinessProposal(BaseModel):
+    proposal_id: str
+    business_idea: BusinessIdea
+    market_research: MarketResearchOutput
+    business_strategy: BusinessStrategyOutput
+    business_plan_review: BusinessPlanReviewOutput
+    executive_summary: str
+    final_recommendation: str
+    created_at: datetime
+    workflow_status: Literal["completed"]

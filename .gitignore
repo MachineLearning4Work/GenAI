@@ -1,0 +1,26 @@
+# Secrets - never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+mc-config/
+*.license
+.env copy*
+reports/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Pipeline artifacts
+runs/*
+!runs/.gitkeep
+
+# OS / editor
+.DS_Store
+Thumbs.db

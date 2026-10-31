@@ -85,11 +85,13 @@ The `latest` tag is convenient for evaluation but can change over time. For repe
 
 ## 4. Start a single-node AIStor container
 
-Set an administrator username and a strong password. The password below is only an example; replace it before starting the container.
+Use the same MinIO credentials configured for the API. Enter them without
+putting the password in shell history:
 
 ```powershell
-$AistorAdmin = "minioadmin"
-$AistorPassword = "Change-this-to-a-long-random-password-123!"
+$env:MINIO_ROOT_USER = Read-Host "MinIO root user"
+$securePassword = Read-Host "MinIO root password" -AsSecureString
+$env:MINIO_ROOT_PASSWORD = [System.Net.NetworkCredential]::new("", $securePassword).Password
 ```
 
 Start AIStor:
@@ -100,8 +102,8 @@ docker run -d `
   --restart unless-stopped `
   -p 9000:9000 `
   -p 9001:9001 `
-  --env MINIO_ROOT_USER=$AistorAdmin `
-  --env MINIO_ROOT_PASSWORD=$AistorPassword `
+  --env MINIO_ROOT_USER `
+  --env MINIO_ROOT_PASSWORD `
   --mount "type=bind,source=C:\minio\data,target=/mnt/data" `
   --mount "type=bind,source=C:\minio\minio.license,target=/minio.license,readonly" `
   quay.io/minio/aistor/minio:latest `
@@ -113,7 +115,8 @@ The two ports are:
 - **9000:** S3 API endpoint.
 - **9001:** AIStor web Console.
 
-Open the Console at <http://localhost:9001> and sign in with the values of `$AistorAdmin` and `$AistorPassword`.
+Open the Console at <http://localhost:9001> and sign in with the values of
+`$env:MINIO_ROOT_USER` and `$env:MINIO_ROOT_PASSWORD`.
 
 Applications should use the S3 endpoint:
 
@@ -198,8 +201,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: Change-this-to-a-long-random-password-123!
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in the environment}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in the environment}
     volumes:
       - type: bind
         source: C:/minio/data
@@ -540,7 +543,7 @@ C:\mc.exe --version
 Configure an alias using the S3 endpoint and the same credentials used for the container:
 
 ```powershell
-C:\mc.exe alias set local http://localhost:9000 $AistorAdmin $AistorPassword
+C:\mc.exe alias set local http://localhost:9000 $env:MINIO_ROOT_USER $env:MINIO_ROOT_PASSWORD
 ```
 
 Check the license:

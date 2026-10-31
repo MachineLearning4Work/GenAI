@@ -1,58 +1,72 @@
-version: '3.8'
+x-app-env: &app-env
+  MINIO_ENDPOINT: minio:9000
+  MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+  MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+  MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-business-plan-bucket}
+  MINIO_ENABLED: ${MINIO_ENABLED:-true}
+  MINIO_REGION: ${MINIO_REGION:-us-east-1}
+  MINIO_SECURE: ${MINIO_SECURE:-false}
+  MINIO_CONNECT_TIMEOUT: ${MINIO_CONNECT_TIMEOUT:-3}
+  MINIO_READ_TIMEOUT: ${MINIO_READ_TIMEOUT:-10}
+  RUNS_DIR: /app/runs
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+  OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+  CREWAI_LLM: ${CREWAI_LLM:-openai/gpt-4o-mini}
+  API_ACCESS_TOKEN: ${API_ACCESS_TOKEN:-}
+
 services:
   app:
     build: .
-    container_name: crewai_app
-    environment:
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-      - MINIO_BUCKET_NAME=business-plan-bucket
+    environment: *app-env
     volumes:
       - ./runs:/app/runs
     depends_on:
       - minio
-
-  web:
-    build: .
-    container_name: crewai_web
-    command: uvicorn business_plan.api:app --host 0.0.0.0 --port 8000
-    environment:
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-      - MINIO_BUCKET_NAME=business-plan-bucket
     ports:
-      - "8000:8000"
-    depends_on:
-      - minio
+      - "${APP_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   minio:
-    # Use the requested MinIO image from quay.io which may be available in your environment
-    image: quay.io/minio/aistor/minio:latest
-    container_name: crewai_minio
-    command: server /data --console-address ":9001"
+    image: quay.io/minio/aistor/minio@sha256:107cf2014a9583c74c11e3cdbd6903d89c2244355886b89ce532f4ecae9c23f3
+    command: server /data --license /licenses/minio.license --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
       - minio_data:/data
+      - type: bind
+        source: ./minio.license
+        target: /licenses/minio.license
+        read_only: true
+        bind:
+          create_host_path: false
 
   jenkins:
-    image: jenkins/jenkins:lts
-    container_name: crewai_jenkins
-    # Bind Jenkins web UI to host port 8081 to avoid conflicts with other services
+    profiles: ["ci"]
+    build:
+      context: ./jenkins
+    group_add:
+      - "${DOCKER_GID:-0}"
     ports:
-      - "8081:8080"
-      - "50000:50000"
+      - "127.0.0.1:${JENKINS_PORT:-8081}:8080"
     volumes:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+      - type: bind
+        source: ./minio.license
+        target: /run/secrets/minio.license
+        read_only: true
+        bind:
+          create_host_path: false
 
 volumes:
   minio_data:
