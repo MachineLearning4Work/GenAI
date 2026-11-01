@@ -1,8 +1,241 @@
 # CrewAI Business Proposal API
 
-A FastAPI service that accepts a business idea, runs three dependent CrewAI
-tasks, validates every task result with Pydantic, and stores the input, outputs,
-final proposal, and workflow metadata in MinIO.
+A teaching-focused FastAPI service that accepts a business idea, runs three
+dependent CrewAI tasks, validates every task result with Pydantic, and stores
+the input, outputs, final proposal, and workflow metadata in MinIO. Jenkins
+builds and validates the same application through an isolated Docker Compose
+CI stack.
+
+## Learning objectives
+
+Students use this project to learn how to:
+
+- define CrewAI agents and tasks in YAML;
+- pass validated output from one task to the next;
+- enforce structured LLM output with Pydantic;
+- expose an asynchronous AI workflow through FastAPI;
+- store reproducible workflow artifacts in MinIO;
+- package and run services with Docker Compose; and
+- build, test, smoke-test, and clean up an application from Jenkins.
+
+## Verified project status
+
+The project was reviewed and validated on **2026-11-01** with Docker Desktop and
+Python 3.11:
+
+| Check | Result |
+| --- | --- |
+| Local unit tests | **78 passed** |
+| Docker unit tests | **78 passed** |
+| CrewAI YAML configuration | Valid |
+| Application image | Built successfully |
+| Jenkins image and Docker/Compose tooling | Built and validated |
+| Compose configuration | Valid |
+| FastAPI health check | Passed; application reported healthy |
+| MinIO AIStor license and startup | Validated |
+| MinIO write/read/delete smoke test | Passed |
+| Jenkins controller startup | Passed; login page available on port `8081` |
+| Live OpenAI proposal generation | Not run during review to avoid API cost |
+
+The application, MinIO, and Jenkins were all successfully started together.
+A local Jenkins Pipeline job must still be created through the Jenkins UI for
+each new Jenkins installation. Provider-backed proposal generation requires a
+valid `OPENAI_API_KEY` and may incur API charges.
+
+## Quick start
+
+### 1. Verify prerequisites
+
+Install or provide:
+
+- Python 3.11, 3.12, or 3.13;
+- Docker Desktop with Docker Compose;
+- a valid `minio.license` file in the repository root;
+- an OpenAI API key for live proposal generation; and
+- Git when Jenkins will check out this repository.
+
+Confirm Docker is ready:
+
+```powershell
+docker info
+docker compose version
+```
+
+### 2. Configure the environment
+
+On a fresh clone, create the local environment file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edit `.env` and set these required values:
+
+```dotenv
+MINIO_ROOT_USER=choose-a-unique-user
+MINIO_ROOT_PASSWORD=choose-a-long-random-password
+API_ACCESS_TOKEN=choose-a-long-random-token
+OPENAI_API_KEY=your-provider-key
+```
+
+Do not commit `.env` or `minio.license`. Existing prepared environments should
+keep their current `.env` file instead of overwriting it.
+
+### 3. Start the application and MinIO
+
+```powershell
+docker compose up --build -d app minio
+docker compose ps
+docker compose exec -T app python scripts/smoke_test.py
+```
+
+These three commands are used to build, start, inspect, and test Docker containers for your application and MinIO service.
+
+docker compose up --build -d app minio 
+
+Docker Compose starts:
+- app
+- minio
+- Any services that these two services depend on.
+
+
+Therefore:
+
+- app starts.
+
+- minio starts because it is explicitly requested and is also a dependency of app.
+
+
+- jenkins does NOT start.
+
+Execute application-level connectivity and functionality tests.
+
+
+
+NOTE:
+
+docker compose up --build -d
+
+
+Docker Compose starts all services that are enabled by default, including their dependencies.
+
+In your configuration:
+
+Service	Starts?	Reason
+
+app	Yes	Default service
+
+minio	Yes	Default service
+
+jenkins	No	Requires ci profile
+
+
+Notice that Jenkins is excluded because you defined:
+
+```powershell
+jenkins:
+  profiles: ["ci"]
+```
+
+
+NOTE: One important distinction:
+
+- docker compose exec runs a command inside an existing, running container.
+
+- docker compose run creates a new, one-off container to execute a command.
+
+#### 3.1 Docker Compose commands
+
+docker compose ps,	List containers and their status.
+docker compose logs -f app,	Follow application logs continuously.
+docker compose logs -f minio,	Follow MinIO logs.
+docker compose restart app,	Restart the application.
+docker compose stop	Stop, services without removing containers.
+docker compose down	Stop, and remove containers and networks.
+docker compose down -v,	Also remove associated Compose-managed volumes (potentially deleting persistent data).
+
+docker compose exec app bash	Open a Bash shell inside the application container, if Bash is installed.
+
+
+
+
+Expected smoke-test result:
+
+```text
+Smoke test passed: API health, authentication, and MinIO write/read/delete
+```
+
+Open:
+
+- FastAPI health: <http://localhost:8000/health>
+- MinIO Console: <http://localhost:9001>
+
+### 4. Start Jenkins
+
+```powershell
+docker compose --profile ci up --build -d jenkins
+docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+NOTE: 
+
+These two commands are used to start Jenkins using Docker Compose and retrieve its initial administrator password so you can complete the Jenkins installation and configuration through your browser.
+
+
+#### 4.1 Jenkins Profile 
+
+```powershell
+docker compose --profile ci up --build -d jenkins
+```
+
+This command starts the Jenkins service defined in your docker-compose.yml file.
+Component	Explanation : 
+
+docker compose	: Uses Docker Compose to manage multiple containers and services.
+
+--profile ci	: Enables the ci profile, allowing services assigned to that profile to be started.
+up	Creates and starts the requested services.
+
+--build	Builds or rebuilds the Docker image if necessary before starting.
+
+-d	Detached mode: runs containers in the background.
+
+
+jenkins	Specifies the Jenkins service to start.
+
+
+#### 4.2 Jenkins administrator password
+
+```powershell
+docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+The initial administrator password is generated during the first Jenkins initialization. Because /var/jenkins_home is persisted in a Docker volume, restarting the container normally does not generate a new initial password.
+
+Copy the displayed value into Administrator password, then select Continue. The password persists in the jenkins_home Docker volume.
+
+
+#### 4.3  Jenkins Setup 
+
+Open <http://localhost:8081>, complete the Jenkins setup wizard, and create a
+**Pipeline** job using **Pipeline script from SCM**. Select this Git repository
+and set **Script Path** to `Jenkinsfile`.
+
+### 5. Stop the services
+
+```powershell
+docker compose --profile ci down
+```
+
+Add `--volumes` only when the Jenkins configuration and MinIO data should also
+be deleted:
+
+```powershell
+docker compose --profile ci down --volumes
+```
+
+This command stops and removes the containers, networks, and volumes associated with your Docker Compose project, including the persistent Jenkins data.
+
 
 ## Architecture
 
@@ -33,6 +266,95 @@ status/artifact copies under `RUNS_DIR`, while the proposal endpoints require
 successful MinIO writes. A process restart can interrupt an active job; multiple
 API replicas do not share a locking or idempotency store. Use a durable queue
 and transactional status store before deploying this prototype at scale.
+
+## Repository map
+
+```text
+.
+├── Jenkinsfile                         # Declarative CI pipeline
+├── Dockerfile                          # FastAPI/CrewAI application image
+├── docker-compose.yml                  # Local app, AIStor, and Jenkins services
+├── docker-compose.ci.yml               # Isolated Jenkins test-stack overrides
+├── jenkins/Dockerfile                  # Jenkins with Docker and required plugins
+├── scripts/smoke_test.py               # Real API/authentication/MinIO smoke test
+├── src/business_plan/
+│   ├── api.py                          # FastAPI endpoints and authentication
+│   ├── workflow.py                     # Three-step proposal orchestration
+│   ├── crew.py                         # CrewAI agent/task construction
+│   ├── models.py                       # Pydantic request/output contracts
+│   ├── storage.py                      # Local artifact persistence
+│   ├── object_store.py                 # Strict and best-effort MinIO operations
+│   └── config/
+│       ├── agents.yaml                 # BusinessPlanner role, goal, and backstory
+│       └── tasks.yaml                  # Task prompts and expected outputs
+└── tests/                              # Unit and API tests with external calls mocked
+```
+
+## CrewAI configuration explained
+
+The teaching workflow uses one focused `BusinessPlanner` agent rather than one
+agent per step. This keeps the example economical while showing how multiple
+CrewAI tasks can share one agent and pass validated context forward.
+
+### Agent settings
+
+`src/business_plan/config/agents.yaml` defines:
+
+- `role`: the agent's business-planning specialty;
+- `goal`: the outcome and quality standards;
+- `backstory`: expertise and evidence-aware working style;
+- `allow_delegation: false`: prevents unnecessary agent-to-agent delegation; and
+- `verbose: false`: keeps API and Jenkins logs readable.
+
+`src/business_plan/crew.py` adds runtime safety limits:
+
+- `max_iter=10` limits reasoning loops;
+- `max_execution_time=300` caps a task at five minutes; and
+- `max_retry_limit=1` limits provider-level retries.
+
+The model is selected with `CREWAI_LLM`, using
+`openai/gpt-4o-mini` by default. `OPENAI_BASE_URL` can point to an
+OpenAI-compatible endpoint. The current integration intentionally accepts only
+model identifiers beginning with `openai/`.
+
+### Task sequence
+
+| Order | Task | Input dependency | Structured output |
+| --- | --- | --- | --- |
+| 1 | `MarketResearch` | Submitted business idea | Customers, assumptions, trends, competitors, opportunities, risks, and sources |
+| 2 | `BusinessStrategy` | Business idea and validated market research | Positioning, pricing, go-to-market, operations, KPIs, and mitigations |
+| 3 | `BusinessPlanReview` | Business idea plus both validated prior outputs | Feasibility review, gaps, risks, readiness score, recommendation, and next steps |
+
+Each task is created with `Task.output_pydantic`. The workflow validates the
+result again before storing it or passing it to the next task. A malformed task
+result stops the workflow and records a safe failure status instead of passing
+untrusted output downstream.
+
+The research agent has no live web-search tool. Students should treat generated
+market claims as hypotheses and can extend the lesson by adding a search tool,
+source-validation task, and appropriate API credentials.
+
+## Jenkins pipeline explained
+
+The declarative `Jenkinsfile` performs these stages:
+
+1. **Checkout** — checks out the selected branch and creates a build-specific
+   Compose project name.
+2. **Validate prerequisites** — checks Docker, Compose, the AIStor license, and
+   the merged Compose configuration.
+3. **Build image** — builds the application image from the reviewed source.
+4. **Validate CrewAI configuration** — loads and validates the agent/task YAML.
+5. **Unit tests** — runs the complete pytest suite and publishes JUnit results.
+6. **Start API and MinIO** — creates an isolated, port-free CI stack and copies
+   the license into its named volume.
+7. **Smoke test** — verifies API health, bearer authentication, bucket creation,
+   and MinIO object write/read/delete.
+8. **Post-build cleanup** — captures failure logs and removes only that build's
+   containers, volumes, and application image.
+
+The Jenkins build does **not** call OpenAI. This keeps CI deterministic and
+prevents model charges on every source change. Live generation is tested
+manually through the authenticated API when desired.
 
 ## Requirements and setup
 
@@ -87,7 +409,7 @@ API access tokens, or Jenkins credentials.
 The `.env.example` leaves credentials blank so the application fails closed
 until values are configured. Use strong unique values in shared environments.
 The `/health` endpoint is public and masks the provider key; all proposal and
-legacy run-data endpoints require `Authorization: Bearer <API_ACCESS_TOKEN>`.
+legacy run-data endpoints require `Authorization: Bearer <API_ACCESS_TOKEN>`.`.
 
 ## Run locally
 
@@ -281,3 +603,140 @@ to image builds or deployments.
   secrets must also be removed from repository history before public sharing.
 - Production deployments should configure authentication, strong credentials,
   TLS, a durable worker/status store, request rate limits, and monitoring.
+
+## Jenkins setup notes
+
+### Unlock the Jenkins administrator account
+
+Jenkins stores its one-time initial administrator password inside the Jenkins
+container at `/var/jenkins_home/secrets/initialAdminPassword`. From a PowerShell
+terminal opened in the repository root, run:
+
+```powershell
+docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+Copy the displayed value into the **Administrator password** field at
+<http://localhost:8081>, select **Continue**, install the suggested plugins, and
+create the first administrator account. Treat the initial password as a secret;
+do not add it to `.env`, source control, screenshots, or course materials.
+
+The Jenkins configuration persists in the `jenkins_home` Docker volume. Normal
+container restarts therefore do not require the initial unlock process again.
+Removing the volume with `docker compose --profile ci down --volumes` deletes
+the configured Jenkins instance and requires setup again on the next start.
+
+### Create the project Pipeline job
+
+Starting the Jenkins container does not automatically create a job. On the
+**Start a job** page:
+
+1. Select **Create a job**.
+2. Enter `crewai-mlops-pipeline` as the job name.
+3. Select **Pipeline**, then select **OK**.
+4. In the **Pipeline** section, choose **Pipeline script from SCM**.
+5. Set **SCM** to **Git**.
+6. Set **Repository URL** to
+   `https://github.com/MachineLearning4Work/GenAI.git`.
+7. Add Jenkins Git credentials if the repository is private.
+8. Set **Branch Specifier** to the branch that contains this project. For the
+   reviewed branch, use `*/feature/mlops_project03_jenkins_v3`.
+9. Set **Script Path** to `Jenkinsfile`.
+10. Select **Save**, then select **Build Now**.
+
+The job reads `Jenkinsfile` from the selected remote branch. Local uncommitted
+changes are not available to Jenkins, so commit and push the intended README,
+source, test, Compose, and pipeline changes before building.
+
+### Pipeline from SCM
+Pipeline script from SCM is a Jenkins Pipeline configuration option that tells Jenkins to retrieve the pipeline definition (usually a Jenkinsfile) directly from a source code management (SCM) repository, such as GitHub, GitLab, or Azure DevOps.
+
+In simple terms:
+
+Instead of writing your Jenkins pipeline directly inside the Jenkins web interface, you store the pipeline code in your Git repository. Jenkins retrieves and executes it automatically.
+
+#### Sample Project
+Imagine your MLOps project has this structure:
+
+mlops_project03_jenkins/
+│
+├── Jenkinsfile
+├── requirements.txt
+├── Dockerfile
+├── src/
+│   └── train.py
+├── tests/
+│   └── test_model.py
+└── README.md
+
+The Jenkinsfile contains your CI/CD pipeline instructions.
+
+For example:
+
+pipeline {
+    agent any
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat 'pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                bat 'pytest tests/'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building MLOps project'
+            }
+        }
+    }
+}
+
+### Why Jenkins is this recommended 
+
+
+For your MLOps teaching project, I recommend Pipeline script from SCM because:
+- Your Jenkinsfile is version-controlled alongside your Python code.
+- Students can review pipeline changes through Git commits.
+- You can maintain different pipeline versions using Git branches.
+- You can collaborate with other developers.
+- You can reproduce and maintain CI/CD workflows.
+One important concept: Your Python source code and Jenkinsfile are both stored in Git, but they serve different purposes:
+- train.py: Implements machine learning logic.
+- Jenkinsfile: Defines how Jenkins builds, tests, and deploys your ML application.
+You can think of the Jenkinsfile as the automation blueprint for your MLOps project.
+
+### Understand the build result
+
+Open **Build History**, select the build number, and inspect **Console Output**.
+A successful run performs checkout, prerequisite validation, application-image
+build, CrewAI configuration validation, 78 unit tests, API/MinIO startup, the
+storage smoke test, JUnit publication, and isolated cleanup.
+
+Useful local Jenkins commands:
+
+```powershell
+# Show service status
+docker compose --profile ci ps
+
+# Follow Jenkins logs
+docker compose --profile ci logs -f jenkins
+
+# Restart Jenkins without deleting its configuration
+docker compose --profile ci restart jenkins
+
+# Stop the stack while preserving data
+docker compose --profile ci down
+```
