@@ -508,7 +508,7 @@ python -m pip install -e . "pytest>=8.2,<9" "httpx>=0.28.1,<0.29"
 "pytest>=8.2,<9"	Installs pytest version 8.2 or higher, but lower than 9.
 "httpx>=0.28.1,<0.29"	Installs HTTPX version 0.28.1 or higher, but lower than 0.29.
 
-pytest is a Python testing framework.
+"pytest" is a Python testing framework.
 
 It allows you to write and execute automated tests.
 
