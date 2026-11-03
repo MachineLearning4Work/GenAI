@@ -569,7 +569,7 @@ The check verifies API health, bearer authentication, and MinIO bucket creation
 and object write/read/delete, rather than treating API liveness as proof that
 storage works.
 
-## API
+### 8.1  API Health Check 
 
 The health endpoint is public:
 
@@ -587,35 +587,235 @@ Why is it public?
 
 It does not require a Bearer Token. This allows monitoring tools, Docker health checks, or administrators to check whether the API is available without authentication.
 
+## 9. Submit a Business Proposal
 
+This section explains how to submit a business proposal through the API endpoint:
 
+`POST http://localhost:8000/business-proposals`
 
-Submit a proposal:
+There are two ways to configure the Bearer token before submitting a proposal:
 
-First, generate a secure Bearer Token, then configure it in your environment.
+1. **Option 1:** Use the existing API access token configured in the `.env` file.
+2. **Option 2:** Generate a new secure token, update the `.env` file, and recreate the Docker container so that the application uses the new token.
+
+### 9.1 Option 1 – Use the Existing API Access Token
+
+First, open the project's `.env` file and locate the existing API access token.
+
+For example:
+
+```env
+API_ACCESS_TOKEN=abc123
+```
+
+**Step 1. Configure the token in Anaconda Prompt**
+
+Open Anaconda Prompt in your project directory (or the terminal where you will execute the API requests).
+
+Set the environment variable to the same value configured in `.env`:
+
+```cmd
+set API_ACCESS_TOKEN=abc123
+```
+
+Verify that the environment variable has been set:
+
+```cmd
+echo %API_ACCESS_TOKEN%
+```
+
+Expected output:
+
+```text
+abc123
+```
+
+**Step 2. Submit a business proposal**
+
+Make sure that `payload.json` exists in your current working directory.
+
+Execute the following command in Anaconda Prompt:
+
+```cmd
+curl.exe -X POST http://localhost:8000/business-proposals ^
+  -H "Authorization: Bearer %API_ACCESS_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -H "Idempotency-Key: example-business-montreal-003" ^
+  --data-binary "@payload.json"
+```
+
+**Note:** The caret character (`^`) is the Windows CMD line-continuation character. It allows you to split a long command across multiple lines. Do not add spaces after the caret.
+
+**Step 3. Check the API response**
+
+If the request is accepted, the API returns HTTP `202 Accepted` with a proposal ID.
+
+Example response (illustrative):
+
+```json
+{
+  "proposal_id": "b3a95f878fc6489c88b2b7e8b5824e76",
+  "status": "pending",
+  "task": null,
+  "error": null
+}
+```
+
+Copy the returned `proposal_id` and store it in an environment variable:
+
+```cmd
+set PROPOSAL_ID=b3a95f878fc6489c88b2b7e8b5824e76
+```
+
+Verify the variable:
+
+```cmd
+echo %PROPOSAL_ID%
+```
+
+**Step 4. Check the proposal status**
+
+Use the following GET request to check the progress of the submitted proposal:
+
+```cmd
+curl.exe http://localhost:8000/business-proposals/%PROPOSAL_ID% ^
+  -H "Authorization: Bearer %API_ACCESS_TOKEN%"
+```
+
+Possible response (illustrative):
+
+```json
+{
+  "proposal_id": "b3a95f878fc6489c88b2b7e8b5824e76",
+  "status": "failed",
+  "error": {
+    "code": "TASK_FAILED",
+    "task": "MarketResearch",
+    "message": "The proposal workflow could not complete this task."
+  }
+}
+```
+
+The proposal may initially have a `pending` status. You can repeat the GET request to monitor its progress until it reaches a final status (`completed` or `failed`).
+
+---
+
+### 9.2 Option 2 – Generate a New API Access Token and Recreate the Docker Container
+
+Use this option when you want to replace the existing API access token with a newly generated secure token.
+
+**Step 1. Generate a secure Bearer token**
+
+Execute the following command in Anaconda Prompt:
 
 ```cmd
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-
 Example output (illustrative):
+
+```text
 YOUR_GENERATED_TOKEN_HERE
-
-set API_ACCESS_TOKEN=PASTE_YOUR_GENERATED_TOKEN_HERE
-
-
-```powershell
-curl.exe -X POST http://localhost:8000/business-proposals `
-  -H "Authorization: Bearer $env:API_ACCESS_TOKEN" `
-  -H "Content-Type: application/json" `
-  -d '{"business_idea":{"name":"Example Business","description":"A short business idea","target_market":"Local small businesses","location":"Montreal","budget":"$25,000","additional_context":"Start with a small pilot"}}'
 ```
 
+Copy the generated token.
 
+**Step 2. Update the project's `.env` file**
 
+Open the `.env` file in your project directory and replace the existing token:
 
-The API returns HTTP `202 Accepted` with a pending proposal ID:
+```env
+API_ACCESS_TOKEN=PASTE_YOUR_GENERATED_TOKEN_HERE
+```
+
+**Important:**
+- Do not include quotation marks around the token.
+- Do not add spaces before or after the `=` sign.
+- Keep the token secret. Do not commit your `.env` file or expose the token in GitHub.
+
+**Step 3. Recreate the Docker container**
+
+The application must receive the updated environment variable.
+
+If the token is passed to the application through Docker Compose, changing `.env` alone does not update an already-running container. You must recreate the application container.
+
+From the directory containing `docker-compose.yml` or `compose.yml`, execute:
+
+```cmd
+docker compose up -d --build --force-recreate app
+```
+
+Alternatively, you can recreate all services:
+
+```cmd
+docker compose down
+docker compose up -d --build
+```
+
+**Note:** The first command recreates only the `app` service (and starts its required dependencies if they are not already running). The second command stops the Compose application and starts all services defined in the Compose configuration.
+
+To identify the available service names, execute:
+
+```cmd
+docker compose config --services
+```
+
+Example output:
+
+```text
+minio
+app
+```
+
+**Step 4. Verify that the new token is available inside the application container**
+
+You can check whether the environment variable exists inside the running container without displaying the actual secret:
+
+```cmd
+docker compose exec app sh -c "if [ -n \"$API_ACCESS_TOKEN\" ]; then echo API_ACCESS_TOKEN is set; else echo API_ACCESS_TOKEN is missing; fi"
+```
+
+Expected output:
+
+```text
+API_ACCESS_TOKEN is set
+```
+
+This confirms that the environment variable is available inside the application container. It does not display or verify the token's actual value.
+
+**Step 5. Configure the new token in Anaconda Prompt**
+
+The token configured in the Windows environment must match the token configured in `.env`.
+
+Execute:
+
+```cmd
+set API_ACCESS_TOKEN=PASTE_YOUR_GENERATED_TOKEN_HERE
+```
+
+Verify that it has been configured:
+
+```cmd
+echo %API_ACCESS_TOKEN%
+```
+
+You are now ready to submit a business proposal using the new token.
+
+**Step 6. Submit a business proposal**
+
+Execute the following command:
+
+```cmd
+curl.exe -X POST http://localhost:8000/business-proposals ^
+  -H "Authorization: Bearer %API_ACCESS_TOKEN%" ^
+  -H "Content-Type: application/json" ^
+  -H "Idempotency-Key: example-business-montreal-003" ^
+  --data-binary "@payload.json"
+```
+
+The API should return HTTP `202 Accepted` with a proposal ID and a `pending` status.
+
+Example response (illustrative):
 
 ```json
 {
@@ -624,36 +824,122 @@ The API returns HTTP `202 Accepted` with a pending proposal ID:
 }
 ```
 
-Poll the proposal:
+**Step 7. Monitor the proposal**
 
-```powershell
-curl.exe http://localhost:8000/business-proposals/<proposal_id> `
-  -H "Authorization: Bearer $env:API_ACCESS_TOKEN"
+Copy the returned proposal ID:
+
+```cmd
+set PROPOSAL_ID=PASTE_RETURNED_PROPOSAL_ID_HERE
 ```
 
-The response contains `pending`, `running` (including the current task),
-`completed` (including the proposal), or `failed` (including a safe error
-category and task). Input errors return `422`; missing proposals return `404`;
-missing LLM or MinIO configuration returns `503`; invalid bearer tokens return
-`401`.
+Check the proposal status:
 
-Clients may include an `Idempotency-Key` header (up to 200 non-whitespace
-characters). Repeating the same key and request body returns the existing
-proposal instead of scheduling duplicate work; reusing the key with different
-input returns `409 Conflict`. The mapping is stored locally and guarded only
-within one API process, so it is not a distributed idempotency guarantee.
+```cmd
+curl.exe http://localhost:8000/business-proposals/%PROPOSAL_ID% ^
+  -H "Authorization: Bearer %API_ACCESS_TOKEN%"
+```
 
-The incoming idea fields are `name`, `description`, and `target_market`
-(required), plus optional `location`, `budget`, and `additional_context`.
-String lengths are validated with Pydantic. The generated final JSON contains
-`proposal_id`, the original idea, all three validated outputs, an executive
-summary, a final recommendation, an ISO-8601 creation timestamp, and the
-completed status.
+Repeat the GET request as needed to monitor the workflow.
 
-`/submit`, `/status/{run_id}`, and `/runs/{run_id}/artifacts` remain for
-compatibility with the original deterministic teaching demo. They are
-authenticated but do not call CrewAI; use `/business-proposals` for the real
-LLM-backed workflow.
+---
+
+### 9.3 Understanding the API Responses and Workflow
+
+The business proposal endpoint executes an asynchronous, LLM-backed workflow using CrewAI.
+
+The API initially accepts the request and returns a proposal ID. The actual workflow continues in the background.
+
+The status endpoint can return the following states:
+
+| Status | Description |
+|---|---|
+| `pending` | The proposal has been accepted and is waiting for processing. |
+| `running` | The workflow is executing. The response may include the current task. |
+| `completed` | The workflow has successfully completed and generated the final proposal. |
+| `failed` | The workflow encountered an error. The response includes a safe error category and the failed task. |
+
+### 9.4 HTTP Status Codes
+
+The API uses the following HTTP status codes:
+
+| HTTP Status | Description |
+|---|---|
+| `202 Accepted` | The proposal has been accepted for asynchronous processing. |
+| `401 Unauthorized` | The Bearer token is missing or invalid. |
+| `404 Not Found` | The requested proposal ID does not exist. |
+| `409 Conflict` | An existing idempotency key was reused with a different request body. |
+| `422 Unprocessable Entity` | The submitted input does not satisfy the validation requirements. |
+| `503 Service Unavailable` | Required LLM or MinIO configuration is unavailable. |
+
+### 9.5 Idempotency-Key
+
+Clients can optionally include an `Idempotency-Key` HTTP header when submitting a business proposal.
+
+For example:
+
+```cmd
+-H "Idempotency-Key: example-business-montreal-003"
+```
+
+The purpose of this key is to prevent duplicate proposal submissions when a client retries the same request.
+
+The behavior is as follows:
+
+- **Same key + same request body:** The API returns the existing proposal instead of scheduling duplicate work.
+- **Same key + different request body:** The API returns `409 Conflict`.
+- **Different key:** The API treats the request as a new proposal.
+
+The key can contain up to 200 non-whitespace characters.
+
+**Important:** The idempotency mapping is stored locally and protected only within a single API process. It does not provide a distributed idempotency guarantee across multiple API instances.
+
+### 9.6 Business Proposal Input and Generated Output
+
+The incoming business idea must contain the following fields:
+
+**Required fields:**
+
+- `name`: Name of the business idea.
+- `description`: Description of the proposed business.
+- `target_market`: Intended target market.
+
+**Optional fields:**
+
+- `location`: Proposed business location.
+- `budget`: Estimated budget.
+- `additional_context`: Any additional information relevant to the proposal.
+
+Input fields and string lengths are validated using Pydantic.
+
+The generated final JSON contains:
+
+- `proposal_id`
+- The original business idea.
+- Three validated workflow outputs.
+- An executive summary.
+- A final recommendation.
+- An ISO-8601 creation timestamp.
+- The completed workflow status.
+
+### 9.7 Legacy API Endpoints
+
+The following endpoints remain available for compatibility with the original deterministic teaching demonstration:
+
+- `/submit`
+- `/status/{run_id}`
+- `/runs/{run_id}/artifacts`
+
+These endpoints are authenticated but do not execute the CrewAI workflow.
+
+**Important:** For the actual LLM-backed business proposal workflow, use:
+
+`POST /business-proposals`
+
+and retrieve its status using:
+
+`GET /business-proposals/{proposal_id}`
+
+
 
 ## MinIO artifact layout
 

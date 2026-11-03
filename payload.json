@@ -1,0 +1,10 @@
+{
+  "business_idea": {
+    "name": "Example Business",
+    "description": "A small bookkeeping and payroll service for local companies",
+    "target_market": "Local small businesses",
+    "location": "Montreal",
+    "budget": "$25,000",
+    "additional_context": "Start with a small pilot"
+  }
+}
