@@ -294,7 +294,42 @@ Open <http://localhost:8081>, complete the Jenkins setup wizard, and create a
 and set **Script Path** to `Jenkinsfile`.
 
 
-#### 4.4  Reset Jenkins and Retrieve the Initial Administrator Password
+#### 4.4 Jenkins Pipeline Configuration
+
+Create a Jenkins **Pipeline** job and select **Pipeline script from SCM**.
+
+Use the following configuration:
+
+- **SCM:** Git
+- **Repository URL:**
+
+  ```text
+  https://github.com/MachineLearning4Work/GenAI.git
+  ```
+
+
+Credentials: - none -
+
+
+Branch Specifier:
+
+```text
+*/feature/mlops_project03_jenkins_v3
+```
+
+Repository browser: (Auto)
+
+Script Path:
+
+```text
+Jenkinsfile
+```
+
+Keep Lightweight checkout enabled, then click Save and Build Now.
+
+
+
+#### 4.5  Reset Jenkins and Retrieve the Initial Administrator Password
 
 If Jenkins is already running and you have forgotten the administrator password, you can reset Jenkins to its initial state by stopping the container, removing it, deleting its persistent volume, and rebuilding it.
 
