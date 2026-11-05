@@ -638,6 +638,11 @@ The declarative `Jenkinsfile` performs these stages:
 
 The Jenkins build does **not** call OpenAI. This keeps CI deterministic and prevents model charges on every source change. Live generation is tested manually through the authenticated API when desired.
 
+
+
+
+
+
 ##### Requirements and setup
 
 - Python 3.11, 3.12, or 3.13 (CrewAI 1.15.28 does not support Python 3.14)
