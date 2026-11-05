@@ -18,7 +18,7 @@ They complement one another rather than compete.
 
 ## 2. Overall architecture
 
-Imagine an AI solution such as `ceo_council`. A developer pushes a new
+Imagine an AI solution such as `board_assistant`. A developer pushes a new
 version to GitHub or Azure DevOps.
 
 A common architecture is:
@@ -62,7 +62,7 @@ pushes it to a repository:
 
 ``` bash
 git add .
-git commit -m "Update CEO Council agent"
+git commit -m "Update Board Assistant agent"
 git push origin develop
 ```
 
@@ -75,7 +75,7 @@ payload might look like this:
 
 ``` json
 {
-  "repository": "ceo_council",
+  "repository": "board_assistant",
   "branch": "develop",
   "commit": "a81c920",
   "author": "developer",
@@ -134,31 +134,116 @@ authentication mechanism before trusting the payload.
 FastAPI does not need to execute Docker builds, tests, or Kubernetes
 deployments itself. Instead, it can ask Jenkins to do that work.
 
+
+Jenkins provides two common endpoints:
+
+/build	
+Trigger a job without supplying build parameters
+
+/buildWithParameters	
+Trigger a job with parameters
+
+
+Jenkins needs to identify and authenticate the application making the request.
+
+- jenkins_user: Jenkins username.
+
+
+
+- API_TOKEN: API token generated from the Jenkins user account.
+
+
+
+
+
+
 Jenkins provides a REST API that can trigger jobs. For example:
 
 ``` python
 import requests
 
 JENKINS_URL = "https://jenkins.example.com"
-JOB_NAME = "ceo-council-pipeline"
+JOB_NAME = "board-assistant-pipeline"
 
 response = requests.post(
     f"{JENKINS_URL}/job/{JOB_NAME}/buildWithParameters",
     auth=("jenkins_user", "API_TOKEN"),
     params={
         "BRANCH": "develop",
-        "REPOSITORY": "ceo_council"
+        "REPOSITORY": "board_assistant"
     }
 )
 
 response.raise_for_status()
 ```
 
+
+NOTE :
+
+``` python
+response.raise_for_status()
+``` 
+
+IMPORTANT : 
+This is an important line.
+
+It checks whether the HTTP request was successful.
+- If the response has an HTTP error (4xx or 5xx), Python raises an exception.
+
+- If the response is successful, execution continues.
+
+However, there is an important distinction:
+
+A successful HTTP response does not mean the Jenkins pipeline completed successfully. It generally means Jenkins accepted the request and scheduled the build.
+
+
+
 The example is simplified. Depending on Jenkins security configuration,
 a request may also need a crumb (CSRF protection token), and the
 credentials should be stored securely rather than hard-coded.
 
+#### Step 4.1 --- CSRF protection: Jenkins crumb
+CSRF protection: Jenkins crumb
+
+Jenkins can enable CSRF (Cross-Site Request Forgery) protection to prevent unauthorized requests that attempt to perform actions on behalf of an authenticated user.
+
+For POST requests, Jenkins may require a special token called a crumb.
+
+The process is:
+
+1. FastAPI authenticates with Jenkins.
+
+2. FastAPI requests a crumb from Jenkins.
+
+3. Jenkins returns the crumb and its associated HTTP header name.
+
+4. FastAPI includes that header in the POST request that triggers the pipeline.
+
+
+
 ### Step 5 --- Jenkins executes the pipeline
+
+Groovy is a programming language that runs on the Java Virtual Machine (JVM). It is similar to Java but has a simpler and more flexible syntax.
+
+In Jenkins, Groovy is the language used to write and execute pipeline scripts.
+
+
+``` groovy
+stage('Checkout') {
+    steps {
+        git branch: 'develop',
+            url: 'https://github.com/company/board_assistant.git'
+    }
+}
+```
+
+Why are there two lines?
+Because branch and url are two named arguments passed to the same git step.
+
+It is equivalent to writing everything on one line:
+``` groovy
+git branch: 'develop', url: 'https://github.com/company/board_assistant.git'
+```
 
 A Jenkinsfile defines the steps to execute. For example:
 
@@ -166,11 +251,24 @@ A Jenkinsfile defines the steps to execute. For example:
 pipeline {
     agent any
 
+     parameters {
+        string(
+            name: 'BRANCH',
+            defaultValue: 'main'
+        )
+
+        string(
+            name: 'REPOSITORY',
+            defaultValue: 'board_assistant'
+        )
+    }
+    
+    
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'develop',
-                    url: 'https://github.com/company/ceo_council.git'
+                    url: 'https://github.com/company/board_assistant.git'
             }
         }
 
@@ -188,7 +286,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ceo-council:1.0 .'
+                sh 'docker build -t board-assistant:1.0 .'
             }
         }
 
@@ -221,6 +319,20 @@ Jenkins can automate:
 The actual stages depend on the project's requirements and deployment
 strategy.
 
+
+In a Jenkins Declarative Pipeline, each statement inside the steps {} block represents an individual pipeline step (or operation).
+
+For example:
+``` groovy
+steps {
+    echo "Starting pipeline"
+    echo "Checking out source code"
+    sh "python --version"
+    sh "pip install -r requirements.txt"
+    echo "Installation completed"
+}
+```
+
 ## 4. Where MinIO fits
 
 MinIO is object storage compatible with the Amazon S3 API. It provides a
@@ -236,7 +348,7 @@ Examples of artifacts include:
   Logs              `training.log`
   Dataset           `dataset.csv`
   Docker metadata   `image_metadata.json`
-  Package           `ceo_council.zip`
+  Package           `board_assistant.zip`
 
 Instead of keeping all these files only in the Jenkins workspace, a
 pipeline can upload them to MinIO.
@@ -246,7 +358,7 @@ A possible bucket/object layout:
 ``` text
 minio/
 |
-+-- ceo-council/
++-- board-assistant/
 |   +-- builds/
 |   |   +-- build-101/
 |   |   |   +-- model.pkl
@@ -304,7 +416,7 @@ client = Minio(
     secure=False
 )
 
-bucket = "ceo-council"
+bucket = "board-assistant"
 
 if not client.bucket_exists(bucket):
     client.make_bucket(bucket)
@@ -465,6 +577,55 @@ MLflow, and MinIO, responsibilities could be separated as follows:
   Kubernetes                          Running and managing deployed
                                       containers
   -----------------------------------------------------------------------
+
+Note:
+
+
+Docker vs Kubernetes :  
+
+Docker packages and runs applications in containers.
+
+Kubernetes orchestrates those containers across a cluster of machines.
+
+Imagine you have a FastAPI application serving ML predictions.
+
+With Docker:
+- You build a Docker image.
+- You start one or more containers.
+
+With Kubernetes:
+
+- You deploy multiple replicas of your application.
+
+- Kubernetes distributes Pods across available worker nodes.
+
+- It monitors their health.
+
+- It restarts failed containers.
+
+- It can scale replicas according to demand.
+
+
+
+
+Note: 
+
+- IaaS – Infrastructure as a Service: Renting computing infrastructure from a cloud provider (AWS. Azure, ...)
+
+
+- IaC – Infrastructure as Code: Defining, provisioning, and managing infrastructure using configuration files or code. 
+
+IaC :
+
+Terraform vs Terragrunt
+
+Both Terraform and Terragrunt are Infrastructure as Code (IaC) tools
+
+
+- Terraform is the core IaC tool used to provision and manage infrastructure.
+- Terragrunt is a wrapper around Terraform that helps organize.
+
+
 
 ### Important distinction: MinIO versus MLflow
 

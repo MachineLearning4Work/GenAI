@@ -49,9 +49,13 @@ valid `OPENAI_API_KEY` and may incur API charges.
 Install or provide:
 
 - Python 3.11, 3.12, or 3.13;
+
 - Docker Desktop with Docker Compose;
+
 - a valid `minio.license` file in the repository root;
+
 - an OpenAI API key for live proposal generation; and
+
 - Git when Jenkins will check out this repository.
 
 Confirm Docker is ready:
@@ -72,9 +76,13 @@ Copy-Item .env.example .env
 Edit `.env` and set these required values:
 
 ```dotenv
+
 MINIO_ROOT_USER=choose-a-unique-user
+
 MINIO_ROOT_PASSWORD=choose-a-long-random-password
+
 API_ACCESS_TOKEN=choose-a-long-random-token
+
 OPENAI_API_KEY=your-provider-key
 ```
 
@@ -82,12 +90,72 @@ Do not commit `.env` or `minio.license`. Existing prepared environments should
 keep their current `.env` file instead of overwriting it.
 
 ### 3. Start the application and MinIO
+ Please check docker-compose.yml
+
+```powershell
+cd C:\......\mlops_project03_jenkins_modified_27Oct2026
+```
+Then, 
 
 ```powershell
 docker compose up --build -d app minio
 docker compose ps
 docker compose exec -T app python scripts/smoke_test.py
 ```
+
+NOTE: One important distinction:
+
+- docker compose exec:
+     runs a command inside an existing, running container.
+
+- docker compose run :
+       creates a new, one-off container to execute a command.
+
+
+```powershell
+docker compose run --rm app python --version
+[+] run 1/1
+ ✔ Container crewai-minio-1 Running                                                                                 0.0s
+Container crewai-app-run-f0bd356278a0 Creating
+Container crewai-app-run-f0bd356278a0 Created
+Python 3.11.18
+
+```
+Create a new temporary container using the configuration of the app service, execute python --version inside it, and remove the container when finished (Above Script)
+
+
+#### 3.1 Compare all three commands :
+
+Command,	What does it do?,	Creates a new container?
+
+docker compose up,	Starts services,	If needed
+
+docker compose run,	Runs a one-off command,	Yes
+
+docker compose exec,	Executes a command in an existing running container,	No
+
+
+NOTE: 
+
+docker compose exec : 
+
+Executes a command inside an existing running service container.
+
+You do not need to rebuild your images or restart your containers to run this smoke test.
+
+
+```powershell
+Smoke test passed: API health, authentication, and MinIO write/read/delete
+```
+
+Another example: Open a terminal inside the container:
+
+```powershell
+docker compose exec app bash
+root@d708ba44ffa5:/app# python --version
+Python 3.11.18
+```
+
 
 These three commands are used to build, start, inspect, and test Docker containers for your application and MinIO service.
 
@@ -114,20 +182,21 @@ Execute application-level connectivity and functionality tests.
 
 NOTE:
 
+```powershell
 docker compose up --build -d
-
+```
 
 Docker Compose starts all services that are enabled by default, including their dependencies.
 
 In your configuration:
 
-Service	Starts?	Reason
+Service,	Starts?,	Reason
 
-app	Yes	Default service
+app,	Yes,	Default service
 
-minio	Yes	Default service
+minio,	Yes,	Default service
 
-jenkins	No	Requires ci profile
+jenkins,	No,	Requires ci profile
 
 
 Notice that Jenkins is excluded because you defined:
@@ -138,23 +207,24 @@ jenkins:
 ```
 
 
-NOTE: One important distinction:
-
-- docker compose exec runs a command inside an existing, running container.
-
-- docker compose run creates a new, one-off container to execute a command.
-
 #### 3.1 Docker Compose commands
 
 docker compose ps,	List containers and their status.
+
 docker compose logs -f app,	Follow application logs continuously.
+
 docker compose logs -f minio,	Follow MinIO logs.
+
 docker compose restart app,	Restart the application.
+
 docker compose stop	Stop, services without removing containers.
+
 docker compose down	Stop, and remove containers and networks.
+
 docker compose down -v,	Also remove associated Compose-managed volumes (potentially deleting persistent data).
 
-docker compose exec app bash	Open a Bash shell inside the application container, if Bash is installed.
+docker compose exec app bash : 
+Open a Bash shell inside the application container, if Bash is installed.
 
 
 
@@ -223,6 +293,169 @@ Open <http://localhost:8081>, complete the Jenkins setup wizard, and create a
 **Pipeline** job using **Pipeline script from SCM**. Select this Git repository
 and set **Script Path** to `Jenkinsfile`.
 
+
+#### 4.4  Reset Jenkins and Retrieve the Initial Administrator Password
+
+If Jenkins is already running and you have forgotten the administrator password, you can reset Jenkins to its initial state by stopping the container, removing it, deleting its persistent volume, and rebuilding it.
+
+**Important:** Deleting the Jenkins volume removes all Jenkins data, including users, jobs, plugins, credentials, and configurations. It does not remove MinIO data if you delete only the Jenkins volume.
+
+##### 1. Check the Running Containers
+
+From the project directory, run:
+
+```powershell
+docker compose ps
+```
+
+Identify the Jenkins container and confirm that it is running.
+
+##### 2. Identify the Jenkins Volume
+
+Inspect the Jenkins container's volume mapping:
+
+```powershell
+docker inspect crewai-jenkins-1 --format "{{json .Mounts}}"
+```
+
+Alternatively, list all Docker volumes:
+
+```powershell
+docker volume ls
+```
+
+For this project, the Jenkins volume is:
+
+```text
+crewai_jenkins_home
+```
+
+The MinIO volume is separate:
+
+```text
+crewai_minio_data
+```
+
+**Do not delete the MinIO volume.**
+
+##### 3. Stop the Jenkins Container
+
+Stop only the Jenkins service:
+
+```powershell
+docker compose stop jenkins
+```
+
+This stops Jenkins without stopping the other services.
+
+##### 4. Remove the Jenkins Container
+
+Remove the stopped Jenkins container:
+
+```powershell
+docker compose rm -f jenkins
+```
+
+This removes the container but does not automatically delete its persistent volume.
+
+##### 5. Delete the Jenkins Persistent Volume
+
+Remove the Jenkins volume to start with a clean installation:
+
+```powershell
+docker volume rm crewai_jenkins_home
+```
+
+Verify that it has been removed:
+
+```powershell
+docker volume ls
+```
+
+The `crewai_jenkins_home` volume should no longer appear.
+
+**Note:** This is the critical step that resets Jenkins. Simply stopping, starting, or rebuilding the container does not reset the persistent Jenkins configuration.
+
+##### 6. Rebuild and Start Jenkins
+
+Rebuild the Jenkins image and start the service using the CI profile:
+
+```powershell
+docker compose --profile ci up --build -d jenkins
+```
+
+This command:
+- Builds the Jenkins image if necessary.
+- Creates a new Jenkins container.
+- Creates a new Jenkins home volume if it does not already exist.
+- Starts Jenkins in detached mode.
+
+##### 7. Check Jenkins Initialization
+
+Check the Jenkins container status:
+
+```powershell
+docker compose ps
+```
+
+Review the initialization logs:
+
+```powershell
+docker compose logs -f jenkins
+```
+
+Wait until Jenkins has completed its startup process. Press `Ctrl+C` to exit the log display without stopping Jenkins.
+
+##### 8. Retrieve the Initial Administrator Password
+
+Execute the following command:
+
+```powershell
+docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+```
+
+Jenkins generates an initial administrator password during its first initialization.
+
+Copy the displayed password.
+
+##### 9. Unlock Jenkins and Complete the Setup
+
+Open Jenkins in your browser:
+
+```text
+http://localhost:8081
+```
+
+Follow these steps:
+
+1. Paste the initial administrator password into the **Unlock Jenkins** page.
+2. Click **Continue**.
+3. Select **Install suggested plugins**.
+4. Create a new administrator account with your preferred username and password.
+5. Complete the Jenkins configuration.
+
+**Important:** Keep your new administrator credentials in a secure location.
+
+## 10. Important Docker Commands: Summary
+
+| Command | Purpose |
+|---|---|
+| `docker compose stop jenkins` | Stop Jenkins |
+| `docker compose start jenkins` | Start an existing stopped Jenkins container |
+| `docker compose rm -f jenkins` | Remove the stopped Jenkins container |
+| `docker volume ls` | List Docker volumes |
+| `docker volume rm crewai_jenkins_home` | Delete Jenkins persistent data |
+| `docker compose --profile ci up --build -d jenkins` | Rebuild and start Jenkins |
+| `docker compose logs -f jenkins` | Monitor Jenkins logs |
+| `docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword` | Retrieve the initial administrator password |
+
+**Key takeaway:** Docker containers and Docker volumes have different lifecycles. Removing and recreating a Jenkins container does not reset Jenkins if its persistent volume is retained. To perform a completely fresh Jenkins installation, the Jenkins container and its associated persistent volume must both be removed.
+
+
+
+
+
+
 ### 5. Stop the services
 
 ```powershell
@@ -236,6 +469,9 @@ docker compose --profile ci down --volumes
 ```
 
 This command stops and removes the containers, networks, and volumes associated with your Docker Compose project, including the persistent Jenkins data.
+
+
+
 
 
 #### 5.1 Component Explanation 
