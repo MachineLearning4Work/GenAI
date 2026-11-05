@@ -845,7 +845,7 @@ The check verifies API health, bearer authentication, and MinIO bucket creation
 and object write/read/delete, rather than treating API liveness as proof that
 storage works.
 
-### 8.1  API Health Check 
+### 8.1  API Health Check - 
 
 The health endpoint is public:
 
