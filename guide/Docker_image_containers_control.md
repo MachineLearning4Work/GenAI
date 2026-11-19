@@ -182,31 +182,154 @@ docker network ls
 docker system df
 docker builder du
 ```
+# Docker Cleanup Verification – Windows PowerShell
 
-Note : 
+## 1. Purpose
+
+This document explains how to verify that Docker has been successfully cleaned up after removing all containers, images, volumes, unused networks, and build cache.
+
+The verification commands confirm that the Docker environment is ready for a fresh deployment.
+
+## 2. Verify Docker Networks
+
+Execute:
 
 ```powershell
 docker network ls
 ```
- ----------->
- Lists all Docker networks.
 
-Your output:
-Network,	Purpose
-bridge,	Default network used by containers for communication
-host,	Allows containers to share the host network
-none,	Disables container networking
+Expected output:
 
-(base) PS C:\Users\....> docker network ls
+```text
 NETWORK ID     NAME      DRIVER    SCOPE
-673eb....2   bridge    bridge    local
-7ea1e2.....7a   host      host      local
-b001b.....4   none      null      local
+673eb1c4a392   bridge    bridge    local
+7ea1e2263e7a   host      host      local
+b001b0255894   none      null      local
+```
+
+**Explanation:**
+
+Docker maintains three default networks:
+
+| Network | Description |
+|---|---|
+| `bridge` | Default network for container communication |
+| `host` | Allows containers to share the host network |
+| `none` | Disables container networking |
+
+**Expected result:** These three default networks are normal and should remain available. Their presence does not indicate incomplete cleanup.
+
+## 3. Verify Docker Disk Usage
+
+Execute:
+
+```powershell
+docker system df
+```
+
+Expected output:
+
+```text
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          0         0          0B        0B
+Containers      0         0          0B        0B
+Local Volumes   0         0          0B        0B
+Build Cache     0         0          0B        0B
+```
+
+**Explanation:**
+
+| Resource | Description | Expected |
+|---|---|---|
+| Images | Downloaded and locally built Docker images | 0 |
+| Containers | Running and stopped containers | 0 |
+| Local Volumes | Docker-managed persistent storage | 0 |
+| Build Cache | Cached Docker build layers | 0B |
+
+Additional columns:
+
+- **TOTAL:** Total number of resources.
+- **ACTIVE:** Number of resources currently in use.
+- **SIZE:** Disk space consumed.
+- **RECLAIMABLE:** Disk space that Docker can potentially recover.
+
+**Expected result:** All resource counts and disk usage should be zero.
+
+## 4. Verify Docker Build Cache
+
+Execute:
+
+```powershell
+docker builder du
+```
+
+Expected output:
+
+```text
+ID        RECLAIMABLE   SIZE      LAST ACCESSED
+Reclaimable:    0B
+Total:          0B
+```
+
+**Explanation:**
+
+Docker build cache stores intermediate layers and previously executed build operations.
+
+It can include:
+
+- Cached base image layers.
+- Intermediate Dockerfile build layers.
+- Cached dependency installation steps.
+- Cached application compilation steps.
+
+**Expected result:** 
+
+- Reclaimable: 0B
+- Total: 0B
+
+This confirms that Docker's build cache is empty.
+
+## 5. Final Docker Cleanup Verification
+
+| Component | Expected status | Result |
+|---|---|---|
+| Running containers | 0 | Clean |
+| Stopped containers | 0 | Clean |
+| Docker images | 0 | Clean |
+| Docker volumes | 0 | Clean |
+| Build cache | 0B | Clean |
+| Unused networks | No custom unused networks | Clean |
+| Default networks | 3 | Normal |
+
+## 6. Conclusion
+
+The verification confirms that the Docker environment has been successfully cleaned.
+
+All Docker-managed application resources have been removed:
+
+- Containers and orphaned containers.
+- Docker images.
+- Docker volumes and associated persistent application data.
+- Unused Docker networks.
+- Docker build cache.
+
+The three default Docker networks (`bridge`, `host`, and `none`) remain available, as expected.
+
+**The Docker environment is ready for fresh deployments.**
+
+New Docker images, containers, volumes, and networks can now be created when deploying applications such as:
+
+- Jenkins
+- MinIO / AIStor
+- PostgreSQL
+- MLflow
+- CrewAI
+- FastAPI
+
+**Note:** This verification covers Docker-managed resources. It does not confirm that all Docker Desktop internal files, configuration files, or data stored outside Docker volumes have been deleted.
 
 
 
-Expected result
- These three default networks are normal. Docker maintains them automatically. You should not try to delete them.
 
 ---
 
