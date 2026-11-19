@@ -103,6 +103,36 @@ docker compose ps
 docker compose exec -T app python scripts/smoke_test.py
 ```
 
+Note : One important message : 
+
+If you are facing : 
+```powershell
+docker compose up --build -d app minio
+```
+
+failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine; check if the path is correct and if the daemon is running: open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+
+Then :
+
+This error means Docker Compose cannot reach the Docker daemon. On Windows, the named pipe dockerDesktopLinuxEngine is provided by Docker Desktop’s Linux engine, so Docker Desktop is likely closed, still starting, or using a different engine/context
+
+
+```powershell
+docker version
+docker context ls
+docker info
+```
+docker context ls lists the Docker environments that your Docker CLI can connect to.
+Run it in PowerShell:
+
+```powershell
+ docker context ls
+NAME              DESCRIPTION                               DOCKER ENDPOINT                             ERROR
+default           Current DOCKER_HOST based configuration   npipe:////./pipe/docker_engine
+desktop-linux *   Docker Desktop                            npipe:////./pipe/dockerDesktopLinuxEngine
+```
+
+
 NOTE: One important distinction:
 
 - docker compose exec:
