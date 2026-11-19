@@ -89,7 +89,7 @@ OPENAI_API_KEY=your-provider-key
 Do not commit `.env` or `minio.license`. Existing prepared environments should
 keep their current `.env` file instead of overwriting it.
 
-### 3. Start the application and MinIO
+### 3. Start the application and MinIO - IMPORTANT 
  Please check docker-compose.yml
 
 ```powershell
@@ -270,6 +270,28 @@ Open:
 - FastAPI health: <http://localhost:8000/health>
 - MinIO Console: <http://localhost:9001>
 
+
+Docker Compose command
+        |
+        v
+Read docker-compose.yml
+        |
+        +----------------------+
+        |                      |
+        v                      v
+Build app image          Pull MinIO image
+        |                      |
+        +----------+-----------+
+                   |
+                   v
+        Create network and volume
+                   |
+                   v
+          Start two containers
+
+More details  :  guide\docker-compose-build-explained.md
+
+
 ### 4. Start Jenkins
 
 ```powershell
@@ -315,6 +337,10 @@ docker compose exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 The initial administrator password is generated during the first Jenkins initialization. Because /var/jenkins_home is persisted in a Docker volume, restarting the container normally does not generate a new initial password.
 
 Copy the displayed value into Administrator password, then select Continue. The password persists in the jenkins_home Docker volume.
+
+Review: 
+guide\Jenkins_screenshot.png
+
 
 
 #### 4.3  Jenkins Setup 
