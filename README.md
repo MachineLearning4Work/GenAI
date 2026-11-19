@@ -383,7 +383,149 @@ Jenkinsfile
 
 Keep Lightweight checkout enabled, then click Save and Build Now.
 
+#########################
 
+#### 4.5 Jenkins Lightweight Checkout – Explained
+
+##### 1. What Is Lightweight Checkout?
+
+**Lightweight Checkout** is a Jenkins option used when configuring a Pipeline job connected to a Git repository.
+
+When enabled, Jenkins retrieves only the `Jenkinsfile` from the Git repository instead of downloading the entire project just to read the pipeline definition.
+
+This makes pipeline initialization faster and avoids unnecessary Git operations.
+
+##### 2. How Does It Work?
+
+Lightweight Checkout does not mean Jenkins will never download the source code.
+
+There are two separate operations:
+
+##### Step 1: Retrieve the Jenkinsfile
+
+With Lightweight Checkout enabled:
+
+- Jenkins connects to the Git repository (e.g., GitHub).
+- Jenkins retrieves only the `Jenkinsfile`.
+- Jenkins reads the pipeline instructions.
+- The entire repository is not downloaded at this stage.
+
+##### Step 2: Download the Project Source Code
+
+When the pipeline needs the actual project files, Jenkins can download the repository using the `checkout scm` command.
+
+For example:
+
+```groovy
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                bat 'pip install -r requirements.txt'
+            }
+        }
+
+        stage('Run Application') {
+            steps {
+                bat 'python app/main.py'
+            }
+        }
+    }
+}
+```
+
+##### 3. Example: GitHub Repository Structure
+
+Suppose your repository contains:
+
+```text
+mlops_project/
+│
+├── Jenkinsfile
+├── app/
+│   └── main.py
+├── tests/
+├── requirements.txt
+└── README.md
+```
+
+The process works as follows:
+
+| Operation | What Jenkins Retrieves |
+|---|---|
+| Lightweight Checkout | Only the Jenkinsfile |
+| `checkout scm` | Complete repository source code |
+| Install Dependencies | Accesses requirements.txt |
+| Run Application | Accesses app/main.py |
+
+##### 4. Execution Workflow
+
+```text
+       GitHub Repository
+               |
+               v
+     Lightweight Checkout
+               |
+               v
+        Retrieve Jenkinsfile
+               |
+               v
+       Jenkins Reads Pipeline
+               |
+               v
+          checkout scm
+               |
+               v
+    Download Complete Repository
+               |
+               v
+      Jenkins Workspace
+               |
+               v
+       Install Dependencies
+               |
+               v
+        Execute Application
+               |
+               v
+         Build Completed
+```
+
+##### 5. Important Distinction
+
+| Feature | Purpose |
+|---|---|
+| Lightweight Checkout | Retrieves the Jenkinsfile without a full repository checkout |
+| `checkout scm` | Downloads the repository into the Jenkins workspace |
+| Jenkins Workspace | Stores the source files required for pipeline execution |
+| Build Execution | Executes commands using files available in the workspace |
+
+**Important:** Lightweight Checkout only optimizes how Jenkins retrieves the pipeline definition. It does not prevent Jenkins from accessing the complete repository when required.
+
+##### 6. Recommendation
+
+For our Jenkins + GitHub + FastAPI + MinIO project:
+
+1. Enable **Lightweight Checkout** in the Jenkins Pipeline configuration.
+2. Click **Save**.
+3. Click **Build Now**.
+4. Include `checkout scm` in the Jenkinsfile when the pipeline needs the complete source code.
+
+This approach provides faster pipeline initialization while preserving full access to the project files during build execution.
+
+##########################
+
+
+Note : 
+Review guide\jenkinsfile-explanation.md
 
 #### 4.5  Reset Jenkins and Retrieve the Initial Administrator Password
 
