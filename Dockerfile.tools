@@ -1,0 +1,30 @@
+# Self-contained teaching environment for Terraform + Terragrunt + Python.
+# Build with: docker compose build
+FROM python:3.12-slim
+
+ARG TARGETARCH=amd64
+ARG TERRAFORM_VERSION=1.9.8
+ARG TERRAGRUNT_VERSION=0.68.17
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y bash ca-certificates curl git unzip \
+    && rm -rf /var/lib/apt/lists/* \
+    && case "${TARGETARCH}" in \
+         amd64) TF_ARCH="amd64"; TG_ARCH="amd64" ;; \
+         arm64) TF_ARCH="arm64"; TG_ARCH="arm64" ;; \
+         *) echo "Unsupported architecture: ${TARGETARCH}" >&2; exit 1 ;; \
+       esac \
+    && curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${TF_ARCH}.zip" -o /tmp/terraform.zip \
+    && unzip -q /tmp/terraform.zip -d /usr/local/bin \
+    && rm /tmp/terraform.zip \
+    && curl -fsSL "https://github.com/gruntwork-io/terragrunt/releases/download/v${TERRAGRUNT_VERSION}/terragrunt_linux_${TG_ARCH}" -o /usr/local/bin/terragrunt \
+    && chmod +x /usr/local/bin/terragrunt \
+    && terraform version \
+    && terragrunt --version \
+    && python3 --version
+
+WORKDIR /workspace
+
+# The compose file mounts the project here. Keeping the image stateless makes
+# it safe to recreate while Terraform state and generated outputs stay local.
+CMD ["bash"]

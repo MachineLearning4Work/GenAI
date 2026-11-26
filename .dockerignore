@@ -1,0 +1,9 @@
+.git
+.gitignore
+.terraform/
+.terragrunt-cache/
+__pycache__/
+*.pyc
+runs/
+*.tfstate
+*.tfstate.*

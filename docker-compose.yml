@@ -1,0 +1,20 @@
+services:
+  tools:
+    # This one container is the complete learning environment.
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    image: terraform-terragrunt-ml-demo:tools
+    # Commands run from the project root inside the container.
+    working_dir: /workspace
+    # Keep source code, Terraform state, and generated results on the host.
+    volumes:
+      - .:/workspace
+    # Non-interactive Terraform settings make CI-style commands predictable.
+    environment:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+    stdin_open: true
+    tty: true
+    # `docker compose run ... <command>` can override this default shell.
+    command: ["bash"]
