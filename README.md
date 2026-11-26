@@ -215,6 +215,9 @@ From the project root, using Docker Compose:
 ```bash
 docker compose build
 docker compose run --rm tools bash -lc 'cd infra/envs/dev && terragrunt init'
+
+
+
 docker compose run --rm tools bash -lc 'cd infra/envs/dev && terragrunt validate'
 docker compose run --rm tools bash -lc 'cd infra/envs/dev && terragrunt plan'
 docker compose run --rm tools bash -lc 'cd infra/envs/dev && terragrunt apply'
